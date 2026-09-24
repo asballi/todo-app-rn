@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,57 +10,76 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth, backend } from './src/firebase';
+import { isFirebaseConfigured } from './src/firebaseConfig';
+import { createTodoRepository } from './src/todoRepository';
+import { migrateLocalTodos } from './src/migrateLocalTodos';
+import AuthScreen from './src/AuthScreen';
 
-const STORAGE_KEY = '@todos';
 const FILTERS = ['Tümü', 'Aktif', 'Tamamlanan'];
 
 export default function App() {
+  // undefined while Firebase is still restoring the session, null when signed out.
+  const [user, setUser] = useState(undefined);
+
+  useEffect(() => {
+    if (!auth) return;
+    return onAuthStateChanged(auth, setUser);
+  }, []);
+
+  if (!isFirebaseConfigured) {
+    return (
+      <SafeAreaView style={[styles.safe, styles.centered]}>
+        <Text style={styles.emptyText}>
+          Firebase ayarları eksik. src/firebaseConfig.js dosyasını doldurun.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+  if (user === undefined) {
+    return (
+      <SafeAreaView style={[styles.safe, styles.centered]}>
+        <ActivityIndicator color="#6c63ff" size="large" />
+      </SafeAreaView>
+    );
+  }
+  if (!user) return <AuthScreen />;
+  return <TodoScreen user={user} />;
+}
+
+function TodoScreen({ user }) {
+  const repo = useMemo(() => createTodoRepository(backend, user.uid), [user.uid]);
   const [todos, setTodos] = useState([]);
   const [inputText, setInputText] = useState('');
   const [filter, setFilter] = useState('Tümü');
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
 
+  useEffect(() => repo.subscribe(setTodos), [repo]);
+
   useEffect(() => {
-    loadTodos();
-  }, []);
-
-  async function loadTodos() {
-    try {
-      const json = await AsyncStorage.getItem(STORAGE_KEY);
-      if (json) setTodos(JSON.parse(json));
-    } catch (e) {}
-  }
-
-  async function saveTodos(newTodos) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newTodos));
-    } catch (e) {}
-  }
+    // If this fails (e.g. offline) the local copy is kept and retried next launch.
+    migrateLocalTodos(AsyncStorage, backend, user.uid).catch(e =>
+      console.warn('Eski görevler aktarılamadı', e)
+    );
+  }, [user.uid]);
 
   function addTodo() {
-    const text = inputText.trim();
-    if (!text) return;
-    const newTodos = [...todos, { id: Date.now(), text, done: false }];
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    repo.add(inputText);
     setInputText('');
   }
 
-  function toggleDone(id) {
-    const newTodos = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+  function toggleDone(item) {
+    repo.setDone(item.id, !item.done);
   }
 
   function deleteTodo(id) {
-    const newTodos = todos.filter(t => t.id !== id);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    repo.remove(id);
   }
 
   function startEdit(id, text) {
@@ -69,11 +88,8 @@ export default function App() {
   }
 
   function saveEdit() {
-    const text = editingText.trim();
-    if (!text) return;
-    const newTodos = todos.map(t => t.id === editingId ? { ...t, text } : t);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    if (!editingText.trim()) return;
+    repo.edit(editingId, editingText);
     setEditingId(null);
     setEditingText('');
   }
@@ -84,9 +100,7 @@ export default function App() {
   }
 
   function clearDone() {
-    const newTodos = todos.filter(t => !t.done);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    repo.clearDone();
   }
 
   const visibleTodos = todos.filter(t => {
@@ -102,7 +116,7 @@ export default function App() {
 
     return (
       <View style={[styles.todoItem, item.done && styles.todoItemDone]}>
-        <TouchableOpacity onPress={() => toggleDone(item.id)} style={styles.checkbox}>
+        <TouchableOpacity onPress={() => toggleDone(item)} style={styles.checkbox}>
           <View style={[styles.checkboxInner, item.done && styles.checkboxChecked]}>
             {item.done && <Feather name="check" size={13} color="#fff" />}
           </View>
@@ -155,7 +169,13 @@ export default function App() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.container}>
-          <Text style={styles.title}>Yapılacaklar</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Yapılacaklar</Text>
+            <TouchableOpacity onPress={() => signOut(auth)} style={styles.logoutBtn}>
+              <Feather name="log-out" size={18} color="#999" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.userEmail}>{user.email}</Text>
 
           {/* Input */}
           <View style={styles.inputRow}>
@@ -239,8 +259,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1a1a2e',
     textAlign: 'center',
-    marginBottom: 20,
     letterSpacing: -0.5,
+  },
+  header: {
+    justifyContent: 'center',
+  },
+  logoutBtn: {
+    position: 'absolute',
+    right: 0,
+    padding: 6,
+  },
+  userEmail: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 2,
+    marginBottom: 16,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
   },
 
   // Input

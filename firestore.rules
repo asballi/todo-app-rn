@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each user can only read and write their own todos.
+    match /users/{userId}/todos/{todoId} {
+      allow read, delete: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidTodo(request.resource.data);
+      allow update: if isOwner(userId) && isValidTodo(request.resource.data);
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isValidTodo(todo) {
+      return todo.keys().hasOnly(['text', 'done', 'createdAt'])
+        && todo.text is string && todo.text.size() > 0 && todo.text.size() <= 500
+        && todo.done is bool
+        && todo.createdAt is number;
+    }
+  }
+}
