@@ -148,7 +148,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0f2f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ecebff" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -217,7 +217,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: '#ecebff',
   },
   flex: {
     flex: 1,
