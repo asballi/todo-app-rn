@@ -3,6 +3,9 @@ import { isValidDateKey, isValidTime } from './dates';
 import { tagKey } from './tags';
 import { normalizeRecurrence } from './recurrence';
 import { normalizeReminders } from './reminders';
+import { strings } from '../strings';
+
+const { errors } = strings;
 
 export const PRIORITIES = [0, 1, 2, 3];
 
@@ -17,7 +20,7 @@ function baseRecord(now) {
 
 function requireName(value, label) {
   const text = (value ?? '').trim();
-  if (!text) throw new Error(`${label} boş olamaz`);
+  if (!text) throw new Error(errors.required(label));
   return text;
 }
 
@@ -33,12 +36,12 @@ export function withTaskDefaults(task) {
 }
 
 export function createChecklistItem(title) {
-  return { id: newId(), title: requireName(title, 'Madde'), done: false };
+  return { id: newId(), title: requireName(title, errors.fields.checklistItem), done: false };
 }
 
 // Boş maddeler atılır; eksik id ve done alanları tamamlanır.
 function normalizeChecklist(checklist) {
-  if (!Array.isArray(checklist)) throw new Error('Geçersiz kontrol listesi');
+  if (!Array.isArray(checklist)) throw new Error(errors.invalidChecklist);
   return checklist
     .map(item => ({ id: item.id ?? newId(), title: (item.title ?? '').trim(), done: !!item.done }))
     .filter(item => item.title);
@@ -46,15 +49,15 @@ function normalizeChecklist(checklist) {
 
 function validateTaskFields(fields) {
   const task = { ...fields };
-  task.title = requireName(task.title, 'Görev başlığı');
+  task.title = requireName(task.title, errors.fields.taskTitle);
   task.notes = task.notes ?? '';
   task.dueDate = task.dueDate || null;
   task.dueTime = task.dueTime || null;
-  if (task.dueDate && !isValidDateKey(task.dueDate)) throw new Error('Geçersiz tarih');
-  if (task.dueTime && !isValidTime(task.dueTime)) throw new Error('Geçersiz saat');
+  if (task.dueDate && !isValidDateKey(task.dueDate)) throw new Error(errors.invalidDate);
+  if (task.dueTime && !isValidTime(task.dueTime)) throw new Error(errors.invalidTime);
   // Saat yalnızca bir güne bağlı olarak anlamlıdır.
   if (!task.dueDate) task.dueTime = null;
-  if (!PRIORITIES.includes(task.priority)) throw new Error('Geçersiz öncelik');
+  if (!PRIORITIES.includes(task.priority)) throw new Error(errors.invalidPriority);
   task.checklist = normalizeChecklist(task.checklist ?? []);
   // Tekrar bir bitiş tarihine bağlıdır; tarih kalkınca tekrar da kalkar.
   task.recurrence = normalizeRecurrence(task.recurrence ?? null, task.dueDate);
@@ -128,7 +131,7 @@ export function createInbox(now = new Date()) {
   return {
     ...baseRecord(now),
     id: INBOX_ID,
-    name: 'Gelen Kutusu',
+    name: strings.defaults.inboxName,
     color: '#6c63ff',
     icon: 'inbox',
     isSystem: true,
@@ -139,7 +142,7 @@ export function createInbox(now = new Date()) {
 export function createCategory(input, sortOrder, now = new Date()) {
   return {
     ...baseRecord(now),
-    name: requireName(input.name, 'Kategori adı'),
+    name: requireName(input.name, errors.fields.categoryName),
     color: input.color ?? '#6c63ff',
     icon: input.icon ?? 'folder',
     isSystem: false,
@@ -149,7 +152,7 @@ export function createCategory(input, sortOrder, now = new Date()) {
 
 export function updateCategory(category, changes, now = new Date()) {
   const next = { ...category, updatedAt: nowIso(now) };
-  if ('name' in changes) next.name = requireName(changes.name, 'Kategori adı');
+  if ('name' in changes) next.name = requireName(changes.name, errors.fields.categoryName);
   if ('color' in changes) next.color = changes.color;
   if ('icon' in changes) next.icon = changes.icon;
   if ('sortOrder' in changes) next.sortOrder = changes.sortOrder;
@@ -157,14 +160,14 @@ export function updateCategory(category, changes, now = new Date()) {
 }
 
 export function createTag(input, now = new Date()) {
-  const name = requireName(input.name, 'Etiket adı');
+  const name = requireName(input.name, errors.fields.tagName);
   return { ...baseRecord(now), name, nameKey: tagKey(name), color: input.color ?? DEFAULT_TAG_COLOR };
 }
 
 export function updateTag(tag, changes, now = new Date()) {
   const next = { ...tag, updatedAt: nowIso(now) };
   if ('name' in changes) {
-    next.name = requireName(changes.name, 'Etiket adı');
+    next.name = requireName(changes.name, errors.fields.tagName);
     next.nameKey = tagKey(next.name);
   }
   if ('color' in changes) next.color = changes.color;

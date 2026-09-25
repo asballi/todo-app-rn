@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import Chip from './Chip';
 import { useTodoStore } from '../store/useTodoStore';
 import { sortCategories } from '../domain/filters';
+import { strings } from '../strings';
 
 export default function CategoryPicker({ value, onChange }) {
   const allCategories = useTodoStore(s => s.categories);
@@ -18,7 +19,7 @@ export default function CategoryPicker({ value, onChange }) {
           color={category.color}
           selected={value === category.id}
           onPress={() => onChange(category.id)}
-          accessibilityLabel={`Kategori ${category.name}`}
+          accessibilityLabel={strings.category.chipLabel(category.name)}
         />
       ))}
     </View>

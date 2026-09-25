@@ -24,7 +24,7 @@ export default function ListsLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Listeler',
+          title: strings.lists.title,
           headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push('/settings')}
@@ -38,7 +38,7 @@ export default function ListsLayout() {
       />
       <Stack.Screen name="category/[id]" options={{ title: '' }} />
       <Stack.Screen name="tag/[id]" options={{ title: '' }} />
-      <Stack.Screen name="overdue" options={{ title: 'Gecikmiş' }} />
+      <Stack.Screen name="overdue" options={{ title: strings.lists.overdue }} />
     </Stack>
   );
 }

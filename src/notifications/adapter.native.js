@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { strings } from '../strings';
 
 // Mobil: işletim sisteminin yerel bildirimleri. Uygulama kapalıyken de çalışır.
 // Her bildirimin data.key alanı plandaki anahtardır; eşitleme bununla yapılır.
@@ -17,7 +18,7 @@ export function init({ onOpenTask }) {
   });
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-      name: 'Hatırlatıcılar',
+      name: strings.reminders.channelName,
       importance: Notifications.AndroidImportance.HIGH,
     }).catch(e => console.warn('Bildirim kanalı oluşturulamadı', e));
   }

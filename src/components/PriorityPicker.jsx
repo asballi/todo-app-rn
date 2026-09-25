@@ -2,8 +2,9 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Chip from './Chip';
 import { priorityColors } from '../theme';
+import { strings } from '../strings';
 
-export const PRIORITY_LABELS = ['Yok', 'Düşük', 'Orta', 'Yüksek'];
+export const PRIORITY_LABELS = strings.priority.labels;
 
 export default function PriorityPicker({ value, onChange }) {
   return (
@@ -16,7 +17,7 @@ export default function PriorityPicker({ value, onChange }) {
           color={priorityColors[priority]}
           selected={value === priority}
           onPress={() => onChange(priority)}
-          accessibilityLabel={`Öncelik ${label}`}
+          accessibilityLabel={strings.priority.chipLabel(label)}
         />
       ))}
     </View>

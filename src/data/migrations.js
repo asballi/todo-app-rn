@@ -1,6 +1,7 @@
 import { KEYS, readJson, writeJsonMany, removeKey } from './storage';
 import { createInbox, createTask, withTaskDefaults } from '../domain/models';
 import { nowIso } from '../domain/ids';
+import { strings } from '../strings';
 
 export const SCHEMA_VERSION = 3;
 
@@ -30,7 +31,7 @@ async function migrateToV2(now) {
     legacy = await readJson(KEYS.legacyTodos, []);
   } catch (e) {
     // Okunamayan eski veri silinmesin diye taşımayı durdur.
-    throw new Error(`Eski görevler okunamadı: ${e.message}`);
+    throw new Error(strings.errors.legacyUnreadable(e.message));
   }
   if (!Array.isArray(legacy)) legacy = [];
 

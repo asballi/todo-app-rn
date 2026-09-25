@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, categoryIcons } from '../theme';
+import { strings } from '../strings';
 
 export default function IconPicker({ value, onChange, color = colors.primary }) {
   return (
@@ -12,7 +13,7 @@ export default function IconPicker({ value, onChange, color = colors.primary }) 
           <TouchableOpacity
             key={icon}
             accessibilityRole="radio"
-            accessibilityLabel={`Simge ${icon}`}
+            accessibilityLabel={strings.pickers.iconLabel(icon)}
             aria-checked={selected}
             onPress={() => onChange(icon)}
             style={[styles.cell, selected && { backgroundColor: color, borderColor: color }]}

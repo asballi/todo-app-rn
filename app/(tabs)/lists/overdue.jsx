@@ -6,6 +6,7 @@ import { overdueTasks } from '../../../src/domain/filters';
 import TaskRows from '../../../src/components/TaskRows';
 import EmptyState from '../../../src/components/EmptyState';
 import { colors } from '../../../src/theme';
+import { strings } from '../../../src/strings';
 
 export default function OverdueScreen() {
   const now = useNow();
@@ -15,7 +16,7 @@ export default function OverdueScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <TaskRows tasks={tasks} />
-      {tasks.length === 0 && <EmptyState icon="check-circle" color={colors.primary} text="Gecikmiş görev yok" />}
+      {tasks.length === 0 && <EmptyState icon="check-circle" color={colors.primary} text={strings.lists.overdueEmpty} />}
     </ScrollView>
   );
 }

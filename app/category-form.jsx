@@ -8,6 +8,9 @@ import IconPicker from '../src/components/IconPicker';
 import { confirm, showError } from '../src/components/confirm';
 import { goBack } from '../src/components/navigation';
 import { colors, categoryColors } from '../src/theme';
+import { strings } from '../src/strings';
+
+const t = strings.category;
 
 // Yeni kategori (?id yok) veya mevcut kategoriyi düzenleme (?id=...).
 export default function CategoryFormScreen() {
@@ -43,9 +46,9 @@ export default function CategoryFormScreen() {
   async function remove() {
     const taskCount = liveRecords(useTodoStore.getState().tasks).filter(t => t.categoryId === id).length;
     const ok = await confirm({
-      title: `"${category.name}" silinsin mi?`,
-      message: taskCount > 0 ? `İçindeki ${taskCount} görev Gelen Kutusu'na taşınacak.` : undefined,
-      confirmText: 'Sil',
+      title: t.deleteConfirm(category.name),
+      message: taskCount > 0 ? t.deleteMovesTasks(taskCount) : undefined,
+      confirmText: strings.common.delete,
       destructive: true,
     });
     if (!ok) return;
@@ -61,7 +64,7 @@ export default function CategoryFormScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen options={{ title: isEdit ? 'Kategoriyi düzenle' : 'Yeni kategori' }} />
+      <Stack.Screen options={{ title: isEdit ? t.edit : t.new }} />
 
       <View style={styles.preview}>
         <View style={[styles.previewIcon, { backgroundColor: color }]}>
@@ -72,17 +75,17 @@ export default function CategoryFormScreen() {
           value={name}
           onChangeText={setName}
           onSubmitEditing={save}
-          placeholder="Kategori adı"
+          placeholder={t.namePlaceholder}
           placeholderTextColor="#bbb"
           autoFocus={!isEdit}
           returnKeyType="done"
         />
       </View>
 
-      <Text style={styles.label}>Renk</Text>
+      <Text style={styles.label}>{t.color}</Text>
       <ColorPicker value={color} onChange={setColor} />
 
-      <Text style={styles.label}>Simge</Text>
+      <Text style={styles.label}>{t.icon}</Text>
       <IconPicker value={icon} onChange={setIcon} color={color} />
 
       <TouchableOpacity
@@ -90,13 +93,13 @@ export default function CategoryFormScreen() {
         onPress={save}
         disabled={!canSave}
       >
-        <Text style={styles.saveText}>{isEdit ? 'Kaydet' : 'Oluştur'}</Text>
+        <Text style={styles.saveText}>{isEdit ? strings.common.save : strings.common.create}</Text>
       </TouchableOpacity>
 
       {isEdit && !category.isSystem && (
         <TouchableOpacity style={styles.deleteButton} onPress={remove}>
           <Feather name="trash-2" size={16} color={colors.danger} />
-          <Text style={styles.deleteText}>Kategoriyi sil</Text>
+          <Text style={styles.deleteText}>{t.delete}</Text>
         </TouchableOpacity>
       )}
     </ScrollView>

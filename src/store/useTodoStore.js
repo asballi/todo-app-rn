@@ -13,6 +13,7 @@ import { nextDueDate } from '../domain/recurrence';
 import { DEFAULT_REMINDER_TIME } from '../domain/reminders';
 import { isValidTime } from '../domain/dates';
 import * as models from '../domain/models';
+import { strings } from '../strings';
 
 const REPOSITORIES = {
   tasks: taskRepository,
@@ -67,7 +68,7 @@ export const useTodoStore = create((set, get) => {
 
   function findAlive(collection, id) {
     const record = get()[collection].find(r => r.id === id && isAlive(r));
-    if (!record) throw new Error(`Kayıt bulunamadı: ${collection}/${id}`);
+    if (!record) throw new Error(strings.errors.notFound(collection, id));
     return record;
   }
 
@@ -90,7 +91,7 @@ export const useTodoStore = create((set, get) => {
 
   function assertUniqueTagName(nameKey, exceptId) {
     const clash = liveRecords(get().tags).find(t => t.id !== exceptId && t.nameKey === nameKey);
-    if (clash) throw new Error('Bu adla bir etiket zaten var');
+    if (clash) throw new Error(strings.errors.duplicateTag);
   }
 
   return {
@@ -179,7 +180,7 @@ export const useTodoStore = create((set, get) => {
 
     async updateSettings(changes) {
       if ('defaultReminderTime' in changes && !isValidTime(changes.defaultReminderTime)) {
-        throw new Error('Geçersiz saat');
+        throw new Error(strings.errors.invalidTime);
       }
       const settings = { ...get().settings, ...changes };
       set({ settings });
@@ -205,7 +206,7 @@ export const useTodoStore = create((set, get) => {
     // Kategori silinince görevleri silinmez, Gelen Kutusu'na taşınır.
     async deleteCategory(id) {
       const category = findAlive('categories', id);
-      if (category.isSystem) throw new Error('Gelen Kutusu silinemez');
+      if (category.isSystem) throw new Error(strings.errors.inboxUndeletable);
       const tasks = liveRecords(get().tasks)
         .filter(t => t.categoryId === id)
         .map(t => models.updateTask(t, { categoryId: INBOX_ID }));

@@ -5,6 +5,7 @@ import { useTodoStore } from '../src/store/useTodoStore';
 import { sortTags, openTaskCountsByTag } from '../src/domain/filters';
 import { ListRow, SectionHeader, listStyles } from '../src/components/ListRow';
 import { colors } from '../src/theme';
+import { strings } from '../src/strings';
 
 // Etiketleri yeniden adlandırma, renklendirme ve silme için.
 export default function ManageTagsScreen() {
@@ -17,11 +18,15 @@ export default function ManageTagsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: 'Etiketler' }} />
-      <SectionHeader title={`${tags.length} etiket`} actionLabel="Yeni etiket" onAction={() => router.push('/tag-form')} />
+      <Stack.Screen options={{ title: strings.tag.manageTitle }} />
+      <SectionHeader
+        title={strings.tag.count(tags.length)}
+        actionLabel={strings.tag.new}
+        onAction={() => router.push('/tag-form')}
+      />
       <View style={listStyles.card}>
         {tags.length === 0 ? (
-          <Text style={listStyles.empty}>Henüz etiket yok.</Text>
+          <Text style={listStyles.empty}>{strings.tag.none}</Text>
         ) : (
           tags.map((tag, index) => (
             <ListRow

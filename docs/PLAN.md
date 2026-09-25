@@ -262,7 +262,12 @@ Task {
    - Eşitleme: görev/ayar değişince (300 ms gecikmeyle), uygulama öne gelince ve saatte bir.
    - Web'de görünür sekmede uygulama içi şerit, arka plandaki sekmede (izin varsa) tarayıcı bildirimi. Şerit kendiliğinden kapanmaz. `setTimeout` sınırı nedeniyle ~24 günden uzak hatırlatıcılar sonraki saatlik eşitlemelerde kurulur.
    - Mobil bildirimler gerçek cihazda henüz denenmedi (yalnızca paketleme doğrulandı).
-4. **Metinleri dil dosyasına taşıma** (V5): davranış değişikliği olmadan, yalnızca metin taşıyan commit.
+4. ✅ **Metinleri dil dosyasına taşıma** (V5): davranış değişikliği olmadan, yalnızca metin taşıyan commit.
+   - Tüm arayüz metinleri, tarih/gün/ay adları, tekrar açıklamaları, hata mesajları ve varsayılan "Gelen Kutusu" adı `src/strings.js` içinde.
+   - Kodda kalanlar: yorumlar, geliştirici günlükleri (`console.warn`) ve Türkçe'ye özgü arama kuralları (`src/domain/text.js`: I/İ dönüşümü, ç→c gibi katlama). Yeni bir dil eklenirken bu dosya da o dilin kurallarına göre ele alınmalı.
+   - Yeni dil eklemek için: `strings` nesnesinin aynı yapıda bir kopyası hazırlanır ve cihaz diline göre seçilir.
+
+**v2 tamamlandı.**
 
 ## Sonraki sürümler
 

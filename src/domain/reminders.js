@@ -1,4 +1,5 @@
 import { parseDateKey, formatDueLabel, isValidTime } from './dates';
+import { strings } from '../strings';
 
 // Hatırlatıcılar görevde "bitiş anından kaç dakika önce" olarak tutulur.
 export const REMINDER_OPTIONS = [0, 10, 30, 60, 1440];
@@ -8,10 +9,10 @@ export const DEFAULT_REMINDER_TIME = '09:00';
 // Tarih yoksa hatırlatıcı olmaz; tekrarlar atılır, küçükten büyüğe sıralanır.
 export function normalizeReminders(reminders, dueDate) {
   if (!dueDate) return [];
-  if (!Array.isArray(reminders)) throw new Error('Geçersiz hatırlatıcı');
+  if (!Array.isArray(reminders)) throw new Error(strings.errors.invalidReminder);
   const unique = [...new Set(reminders)];
-  if (unique.some(r => !REMINDER_OPTIONS.includes(r))) throw new Error('Geçersiz hatırlatıcı');
-  if (unique.length > MAX_REMINDERS) throw new Error(`En fazla ${MAX_REMINDERS} hatırlatıcı eklenebilir`);
+  if (unique.some(r => !REMINDER_OPTIONS.includes(r))) throw new Error(strings.errors.invalidReminder);
+  if (unique.length > MAX_REMINDERS) throw new Error(strings.errors.tooManyReminders(MAX_REMINDERS));
   return unique.sort((a, b) => a - b);
 }
 

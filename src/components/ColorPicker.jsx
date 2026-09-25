@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { categoryColors, colors as theme } from '../theme';
+import { strings } from '../strings';
 
 // allowNone: "renksiz" seçeneği ekler (value = null).
 export default function ColorPicker({ value, onChange, colors = categoryColors, allowNone = false }) {
@@ -10,7 +11,7 @@ export default function ColorPicker({ value, onChange, colors = categoryColors, 
       {allowNone && (
         <TouchableOpacity
           accessibilityRole="radio"
-          accessibilityLabel="Renksiz"
+          accessibilityLabel={strings.pickers.noColor}
           aria-checked={value == null}
           onPress={() => onChange(null)}
           style={[styles.swatch, styles.none, value == null && styles.noneSelected]}
@@ -22,7 +23,7 @@ export default function ColorPicker({ value, onChange, colors = categoryColors, 
         <TouchableOpacity
           key={color}
           accessibilityRole="radio"
-          accessibilityLabel={`Renk ${color}`}
+          accessibilityLabel={strings.pickers.colorLabel(color)}
           aria-checked={value === color}
           onPress={() => onChange(color)}
           style={[styles.swatch, { backgroundColor: color }]}

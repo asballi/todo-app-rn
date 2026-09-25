@@ -1,3 +1,5 @@
+import { strings } from '../strings';
+
 // Bitiş tarihleri yerel metin olarak tutulur: dueDate "YYYY-MM-DD", dueTime "HH:mm".
 // new Date("YYYY-MM-DD") kullanma: UTC gece yarısı olarak yorumlanır ve
 // UTC'nin gerisindeki saat dilimlerinde bir önceki güne kayar.
@@ -56,16 +58,16 @@ export function isCompletedOn(task, dateKey) {
   return !!task.completedAt && toDateKey(new Date(task.completedAt)) === dateKey;
 }
 
-const MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const MONTHS = strings.dates.monthsShort;
 
 // "Bugün", "Yarın 15:00", "25 Eyl", "3 Oca 2027". Tarihsiz görev için null.
 export function formatDueLabel(task, now = new Date()) {
   if (!task.dueDate) return null;
   const today = toDateKey(now);
   let label;
-  if (task.dueDate === today) label = 'Bugün';
-  else if (task.dueDate === addDays(today, 1)) label = 'Yarın';
-  else if (task.dueDate === addDays(today, -1)) label = 'Dün';
+  if (task.dueDate === today) label = strings.dates.today;
+  else if (task.dueDate === addDays(today, 1)) label = strings.dates.tomorrow;
+  else if (task.dueDate === addDays(today, -1)) label = strings.dates.yesterday;
   else {
     const [y, m, d] = task.dueDate.split('-').map(Number);
     label = `${d} ${MONTHS[m - 1]}`;
@@ -82,17 +84,14 @@ export function toTimeString(date) {
 export function quickDueDates(now = new Date()) {
   const today = toDateKey(now);
   return [
-    { label: 'Bugün', value: today },
-    { label: 'Yarın', value: addDays(today, 1) },
-    { label: 'Gelecek hafta', value: addDays(today, 7) },
+    { label: strings.dates.today, value: today },
+    { label: strings.dates.tomorrow, value: addDays(today, 1) },
+    { label: strings.dates.nextWeek, value: addDays(today, 7) },
   ];
 }
 
-const MONTHS_LONG = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-];
-const WEEKDAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const MONTHS_LONG = strings.dates.monthsLong;
+const WEEKDAYS = strings.dates.weekdays;
 
 // "Cuma, 25 Eylül"
 export function formatLongDate(date) {
@@ -102,6 +101,6 @@ export function formatLongDate(date) {
 // Yaklaşan listesindeki gün başlıkları: { title: "Yarın" | "Pazartesi", subtitle: "28 Eylül" }
 export function formatDayHeader(dateKey, now = new Date()) {
   const date = parseDateKey(dateKey);
-  const title = dateKey === addDays(toDateKey(now), 1) ? 'Yarın' : WEEKDAYS[date.getDay()];
+  const title = dateKey === addDays(toDateKey(now), 1) ? strings.dates.tomorrow : WEEKDAYS[date.getDay()];
   return { title, subtitle: `${date.getDate()} ${MONTHS_LONG[date.getMonth()]}` };
 }

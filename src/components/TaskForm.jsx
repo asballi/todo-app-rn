@@ -13,6 +13,7 @@ import { quickDueDates } from '../domain/dates';
 import { colors } from '../theme';
 
 const DEFAULT_TIME = '09:00';
+const f = strings.taskForm;
 
 // Yeni görev ve görev detayı aynı formu kullanır. `children` formun altına
 // eklenir (ör. detay ekranındaki tamamla/sil butonları).
@@ -60,26 +61,26 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
           style={styles.title}
           value={title}
           onChangeText={setTitle}
-          placeholder="Görev başlığı"
+          placeholder={f.titlePlaceholder}
           placeholderTextColor="#bbb"
           autoFocus={autoFocus}
-          accessibilityLabel="Görev başlığı"
+          accessibilityLabel={f.titlePlaceholder}
         />
         <TextInput
           style={styles.notes}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Not ekle"
+          placeholder={f.notesPlaceholder}
           placeholderTextColor="#bbb"
           multiline
-          accessibilityLabel="Not"
+          accessibilityLabel={f.notesLabel}
         />
       </View>
 
       <Text style={styles.label}>{strings.checklist.title}</Text>
       <ChecklistEditor value={checklist} onChange={setChecklist} />
 
-      <Text style={styles.label}>Tarih</Text>
+      <Text style={styles.label}>{f.date}</Text>
       <View style={styles.row}>
         {quickDueDates().map(option => (
           <Chip
@@ -89,7 +90,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
             onPress={() => changeDueDate(option.value)}
           />
         ))}
-        <Chip label="Yok" selected={!dueDate} onPress={() => changeDueDate(null)} accessibilityLabel="Tarih yok" />
+        <Chip label={f.noDate} selected={!dueDate} onPress={() => changeDueDate(null)} accessibilityLabel={f.noDateLabel} />
       </View>
       {dueDate && (
         <View style={styles.row}>
@@ -97,10 +98,10 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
           {dueTime ? (
             <>
               <DateInput mode="time" value={dueTime} onChange={setDueTime} />
-              <Chip label="Saat yok" icon="x" onPress={() => setDueTime(null)} />
+              <Chip label={f.noTime} icon="x" onPress={() => setDueTime(null)} />
             </>
           ) : (
-            <Chip label="Saat ekle" icon="clock" onPress={() => setDueTime(DEFAULT_TIME)} />
+            <Chip label={f.addTime} icon="clock" onPress={() => setDueTime(DEFAULT_TIME)} />
           )}
         </View>
       )}
@@ -115,13 +116,13 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
         </>
       )}
 
-      <Text style={styles.label}>Kategori</Text>
+      <Text style={styles.label}>{f.category}</Text>
       <CategoryPicker value={categoryId} onChange={setCategoryId} />
 
-      <Text style={styles.label}>Etiketler</Text>
+      <Text style={styles.label}>{f.tags}</Text>
       <TagPicker value={tagIds} onChange={setTagIds} />
 
-      <Text style={styles.label}>Öncelik</Text>
+      <Text style={styles.label}>{f.priority}</Text>
       <PriorityPicker value={priority} onChange={setPriority} />
 
       <TouchableOpacity

@@ -2,12 +2,13 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme';
+import { strings } from '../../src/strings';
 
 const TABS = [
-  { name: 'today', title: 'Bugün', icon: 'sun' },
-  { name: 'upcoming', title: 'Yaklaşan', icon: 'calendar' },
-  { name: 'lists', title: 'Listeler', icon: 'list' },
-  { name: 'search', title: 'Ara', icon: 'search' },
+  { name: 'today', title: strings.tabs.today, icon: 'sun' },
+  { name: 'upcoming', title: strings.tabs.upcoming, icon: 'calendar' },
+  { name: 'lists', title: strings.tabs.lists, icon: 'list' },
+  { name: 'search', title: strings.tabs.search, icon: 'search' },
 ];
 
 export default function TabsLayout() {

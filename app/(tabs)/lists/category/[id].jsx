@@ -9,6 +9,7 @@ import TaskRows from '../../../../src/components/TaskRows';
 import CompletedSection from '../../../../src/components/CompletedSection';
 import EmptyState from '../../../../src/components/EmptyState';
 import { colors } from '../../../../src/theme';
+import { strings } from '../../../../src/strings';
 
 export default function CategoryScreen() {
   const { id } = useLocalSearchParams();
@@ -29,7 +30,7 @@ export default function CategoryScreen() {
           headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/category-form', params: { id } })}
-              accessibilityLabel="Kategoriyi düzenle"
+              accessibilityLabel={strings.category.edit}
               style={styles.headerButton}
             >
               <Feather name="edit-2" size={18} color={colors.primary} />
@@ -37,10 +38,10 @@ export default function CategoryScreen() {
           ),
         }}
       />
-      <QuickAdd defaults={defaults} placeholder={`${category.name} listesine ekle...`} />
+      <QuickAdd defaults={defaults} placeholder={strings.category.quickAdd(category.name)} />
       <TaskRows tasks={open} />
       {open.length === 0 && (
-        <EmptyState icon={category.icon} color={category.color} text="Bu kategoride açık görev yok" />
+        <EmptyState icon={category.icon} color={category.color} text={strings.category.empty} />
       )}
       <CompletedSection tasks={completed} />
     </ScrollView>

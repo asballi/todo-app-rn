@@ -15,7 +15,9 @@ import CompletedSection from '../../src/components/CompletedSection';
 import EmptyState from '../../src/components/EmptyState';
 import { PRIORITY_LABELS } from '../../src/components/PriorityPicker';
 import { colors, priorityColors } from '../../src/theme';
+import { strings } from '../../src/strings';
 
+const s = strings.search;
 const toggle = (list, value) => (list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
 
 export default function SearchScreen() {
@@ -58,13 +60,13 @@ export default function SearchScreen() {
           style={styles.input}
           value={query}
           onChangeText={setQuery}
-          placeholder="Görevlerde ara"
+          placeholder={s.placeholder}
           placeholderTextColor="#bbb"
           returnKeyType="search"
-          accessibilityLabel="Görevlerde ara"
+          accessibilityLabel={s.placeholder}
         />
         {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel="Aramayı temizle" hitSlop={8}>
+          <TouchableOpacity onPress={() => setQuery('')} accessibilityLabel={s.clear} hitSlop={8}>
             <Feather name="x" size={18} color={colors.muted} />
           </TouchableOpacity>
         )}
@@ -78,21 +80,19 @@ export default function SearchScreen() {
           aria-expanded={showFilters}
         >
           <Feather name="filter" size={15} color={colors.primary} />
-          <Text style={styles.filterToggleText}>
-            Filtreler{filterCount > 0 ? ` (${filterCount})` : ''}
-          </Text>
+          <Text style={styles.filterToggleText}>{s.filters(filterCount)}</Text>
           <Feather name={showFilters ? 'chevron-up' : 'chevron-down'} size={15} color={colors.primary} />
         </TouchableOpacity>
         {filterCount > 0 && (
           <TouchableOpacity onPress={clearFilters}>
-            <Text style={styles.clearText}>Filtreleri temizle</Text>
+            <Text style={styles.clearText}>{s.clearFilters}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {showFilters && (
         <View style={styles.panel}>
-          <Text style={styles.label}>Kategori</Text>
+          <Text style={styles.label}>{s.category}</Text>
           <View style={styles.chips}>
             {categories.map(category => (
               <Chip
@@ -102,14 +102,14 @@ export default function SearchScreen() {
                 color={category.color}
                 selected={liveCategoryId === category.id}
                 onPress={() => setCategoryId(liveCategoryId === category.id ? null : category.id)}
-                accessibilityLabel={`Kategori ${category.name}`}
+                accessibilityLabel={strings.category.chipLabel(category.name)}
               />
             ))}
           </View>
 
-          <Text style={styles.label}>Etiketler (hepsi)</Text>
+          <Text style={styles.label}>{s.tagsAll}</Text>
           <View style={styles.chips}>
-            {tags.length === 0 && <Text style={styles.none}>Etiket yok</Text>}
+            {tags.length === 0 && <Text style={styles.none}>{s.noTags}</Text>}
             {tags.map(tag => (
               <Chip
                 key={tag.id}
@@ -118,12 +118,12 @@ export default function SearchScreen() {
                 color={tag.color ?? colors.tagDefault}
                 selected={liveTagIds.includes(tag.id)}
                 onPress={() => setTagIds(toggle(liveTagIds, tag.id))}
-                accessibilityLabel={`Etiket ${tag.name}`}
+                accessibilityLabel={strings.tag.chipLabel(tag.name)}
               />
             ))}
           </View>
 
-          <Text style={styles.label}>Öncelik</Text>
+          <Text style={styles.label}>{s.priority}</Text>
           <View style={styles.chips}>
             {PRIORITY_LABELS.map((label, priority) => (
               <Chip
@@ -134,7 +134,7 @@ export default function SearchScreen() {
                 color={priorityColors[priority]}
                 selected={priorities.includes(priority)}
                 onPress={() => setPriorities(toggle(priorities, priority))}
-                accessibilityLabel={`Öncelik ${label}`}
+                accessibilityLabel={strings.priority.chipLabel(label)}
               />
             ))}
           </View>
@@ -142,12 +142,12 @@ export default function SearchScreen() {
       )}
 
       {!active ? (
-        <EmptyState icon="search" text="Aramak için yaz veya filtre seç" />
+        <EmptyState icon="search" text={s.hint} />
       ) : open.length + completed.length === 0 ? (
-        <EmptyState icon="inbox" color={colors.muted} text="Sonuç bulunamadı" />
+        <EmptyState icon="inbox" color={colors.muted} text={s.noResults} />
       ) : (
         <>
-          <Text style={styles.count}>{open.length + completed.length} sonuç</Text>
+          <Text style={styles.count}>{s.resultCount(open.length + completed.length)}</Text>
           <TaskRows tasks={open} />
           <CompletedSection tasks={completed} />
         </>

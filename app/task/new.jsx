@@ -6,6 +6,7 @@ import { goBack } from '../../src/components/navigation';
 import { useTodoStore, isAlive } from '../../src/store/useTodoStore';
 import { INBOX_ID } from '../../src/domain/ids';
 import { isValidDateKey } from '../../src/domain/dates';
+import { strings } from '../../src/strings';
 
 // Parametreler (hepsi isteğe bağlı): title, categoryId, dueDate,
 // tagIds (virgülle ayrılmış).
@@ -40,8 +41,8 @@ export default function NewTaskScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Yeni görev' }} />
-      <TaskForm initial={initial} submitLabel="Oluştur" onSubmit={create} autoFocus />
+      <Stack.Screen options={{ title: strings.task.newTitle }} />
+      <TaskForm initial={initial} submitLabel={strings.common.create} onSubmit={create} autoFocus />
     </>
   );
 }

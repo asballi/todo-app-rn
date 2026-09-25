@@ -6,6 +6,7 @@ import { useTodoStore } from '../src/store/useTodoStore';
 import { useReminders } from '../src/notifications/useReminders';
 import ReminderBanner from '../src/components/ReminderBanner';
 import { colors } from '../src/theme';
+import { strings } from '../src/strings';
 
 export default function RootLayout() {
   const status = useTodoStore(s => s.status);
@@ -20,7 +21,7 @@ export default function RootLayout() {
     return (
       <View style={styles.center}>
         {status === 'error' ? (
-          <Text style={styles.error}>Veriler yüklenemedi: {error}</Text>
+          <Text style={styles.error}>{strings.common.loadFailed(error)}</Text>
         ) : (
           <ActivityIndicator color={colors.primary} />
         )}

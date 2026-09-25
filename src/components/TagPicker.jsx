@@ -6,6 +6,7 @@ import { useTodoStore, isAlive } from '../store/useTodoStore';
 import { suggestTags } from '../domain/filters';
 import { tagKey } from '../domain/tags';
 import { colors } from '../theme';
+import { strings } from '../strings';
 
 const MAX_SUGGESTIONS = 8;
 
@@ -48,11 +49,11 @@ export default function TagPicker({ value, onChange }) {
         value={query}
         onChangeText={setQuery}
         onSubmitEditing={submit}
-        placeholder="Etiket ara veya oluştur"
+        placeholder={strings.tag.pickerPlaceholder}
         placeholderTextColor="#bbb"
         returnKeyType="done"
         blurOnSubmit={false}
-        accessibilityLabel="Etiket ara veya oluştur"
+        accessibilityLabel={strings.tag.pickerPlaceholder}
       />
       <View style={styles.row}>
         {selected.map(tag => (
@@ -63,7 +64,7 @@ export default function TagPicker({ value, onChange }) {
             multiple
             color={tag.color ?? colors.tagDefault}
             onPress={() => onChange(value.filter(id => id !== tag.id))}
-            accessibilityLabel={`Etiket ${tag.name}`}
+            accessibilityLabel={strings.tag.chipLabel(tag.name)}
           />
         ))}
         {suggestions.map(tag => (
@@ -74,11 +75,11 @@ export default function TagPicker({ value, onChange }) {
             multiple
             color={tag.color ?? colors.tagDefault}
             onPress={() => add(tag.id)}
-            accessibilityLabel={`Etiket ${tag.name}`}
+            accessibilityLabel={strings.tag.chipLabel(tag.name)}
           />
         ))}
         {trimmed && !exactMatch && (
-          <Chip label={`"${trimmed}" oluştur`} icon="plus" onPress={submit} />
+          <Chip label={strings.tag.createChip(trimmed)} icon="plus" onPress={submit} />
         )}
       </View>
     </View>

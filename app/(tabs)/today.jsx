@@ -10,6 +10,7 @@ import SectionTitle from '../../src/components/SectionTitle';
 import CompletedSection from '../../src/components/CompletedSection';
 import EmptyState from '../../src/components/EmptyState';
 import { colors } from '../../src/theme';
+import { strings } from '../../src/strings';
 
 export default function TodayScreen() {
   const now = useNow();
@@ -22,20 +23,20 @@ export default function TodayScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.date}>{formatLongDate(now)}</Text>
-      <QuickAdd defaults={defaults} placeholder="Bugün için görev ekle..." />
+      <QuickAdd defaults={defaults} placeholder={strings.today.quickAdd} />
 
       {hasOverdue && (
         <>
-          <SectionTitle title="Gecikmiş" color={colors.danger} count={view.overdue.length} />
+          <SectionTitle title={strings.today.overdue} color={colors.danger} count={view.overdue.length} />
           <TaskRows tasks={view.overdue} />
-          <SectionTitle title="Bugün" count={view.today.length} />
-          {view.today.length === 0 && <Text style={styles.none}>Görev yok</Text>}
+          <SectionTitle title={strings.today.today} count={view.today.length} />
+          {view.today.length === 0 && <Text style={styles.none}>{strings.common.none}</Text>}
         </>
       )}
       <TaskRows tasks={view.today} />
 
       {!hasOverdue && view.today.length === 0 && (
-        <EmptyState icon="sun" text="Bugün için görev yok" />
+        <EmptyState icon="sun" text={strings.today.empty} />
       )}
 
       <CompletedSection tasks={view.completed} />

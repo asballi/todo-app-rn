@@ -2,11 +2,12 @@ import { liveRecords } from './models';
 import { sortTasks } from './sorting';
 import { tagKey } from './tags';
 import { foldForSearch } from './text';
+import { strings } from '../strings';
 import { toDateKey, addDays, isOverdue, isCompletedOn } from './dates';
 
 export function sortCategories(categories) {
   return liveRecords(categories).sort(
-    (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'tr'),
+    (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, strings.locale),
   );
 }
 
@@ -24,7 +25,7 @@ export function openTaskCountsByCategory(tasks) {
 }
 
 export function sortTags(tags) {
-  return liveRecords(tags).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+  return liveRecords(tags).sort((a, b) => a.name.localeCompare(b.name, strings.locale));
 }
 
 // { [taskId]: [tag, ...] } — ada göre sıralı, yalnızca canlı bağ ve etiketler.

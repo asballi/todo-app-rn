@@ -1,5 +1,6 @@
 import React from 'react';
 import { colors } from '../theme';
+import { strings } from '../strings';
 
 // Web: tarayıcının kendi <input type="date|time"> alanı. Değer biçimleri
 // uygulamanınkiyle aynıdır ("YYYY-MM-DD", "HH:mm").
@@ -8,7 +9,7 @@ export default function DateInput({ mode, value, onChange }) {
     <input
       type={mode}
       value={value ?? ''}
-      aria-label={mode === 'date' ? 'Tarih' : 'Saat'}
+      aria-label={mode === 'date' ? strings.dates.dateInput : strings.dates.timeInput}
       onChange={e => e.target.value && onChange(e.target.value)}
       style={{
         fontFamily: 'inherit',

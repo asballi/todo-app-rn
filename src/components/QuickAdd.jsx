@@ -5,11 +5,12 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { useTodoStore } from '../store/useTodoStore';
 import { showError } from './confirm';
+import { strings } from '../strings';
 
 // Yalnızca başlıkla görev ekler; kategori, tarih vb. bulunduğu ekrandan
 // gelen `defaults` ile doldurulur (ör. kategori ekranında o kategori).
 // Ayrıntı butonu aynı varsayılanlarla ve yazılan başlıkla tam formu açar.
-export default function QuickAdd({ defaults = {}, placeholder = 'Görev ekle...' }) {
+export default function QuickAdd({ defaults = {}, placeholder = strings.quickAdd.placeholder }) {
   const router = useRouter();
   const [title, setTitle] = useState('');
 
@@ -41,10 +42,10 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Görev ekle...'
         returnKeyType="done"
         blurOnSubmit={false}
       />
-      <TouchableOpacity style={styles.secondary} onPress={openForm} accessibilityLabel="Ayrıntılı görev ekle">
+      <TouchableOpacity style={styles.secondary} onPress={openForm} accessibilityLabel={strings.quickAdd.details}>
         <Feather name="sliders" size={18} color={colors.primary} />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={submit} accessibilityLabel="Görev ekle">
+      <TouchableOpacity style={styles.button} onPress={submit} accessibilityLabel={strings.quickAdd.add}>
         <Feather name="plus" size={22} color="#fff" />
       </TouchableOpacity>
     </View>

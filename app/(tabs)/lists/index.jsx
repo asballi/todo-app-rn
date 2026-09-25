@@ -12,6 +12,9 @@ import {
 } from '../../../src/domain/filters';
 import { ListRow, SectionHeader, listStyles } from '../../../src/components/ListRow';
 import { colors } from '../../../src/theme';
+import { strings } from '../../../src/strings';
+
+const l = strings.lists;
 
 export default function ListsScreen() {
   const router = useRouter();
@@ -29,19 +32,19 @@ export default function ListsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SectionHeader title="Akıllı listeler" />
+      <SectionHeader title={l.smartLists} />
       <View style={listStyles.card}>
         <ListRow
           first
           icon="alert-circle"
           color={colors.danger}
-          name="Gecikmiş"
+          name={l.overdue}
           count={overdueCount}
           onPress={() => router.push('/lists/overdue')}
         />
       </View>
 
-      <SectionHeader title="Kategoriler" actionLabel="Yeni kategori" onAction={() => router.push('/category-form')} />
+      <SectionHeader title={l.categories} actionLabel={l.newCategory} onAction={() => router.push('/category-form')} />
       <View style={listStyles.card}>
         {categories.map((category, index) => (
           <ListRow
@@ -57,16 +60,14 @@ export default function ListsScreen() {
       </View>
 
       <SectionHeader
-        title="Etiketler"
-        actionLabel="Etiketleri yönet"
+        title={l.tags}
+        actionLabel={l.manageTags}
         actionIcon="settings"
         onAction={() => router.push('/manage-tags')}
       />
       <View style={listStyles.card}>
         {tags.length === 0 ? (
-          <Text style={listStyles.empty}>
-            Henüz etiket yok. Görev düzenlerken etiket ekleyebilirsin.
-          </Text>
+          <Text style={listStyles.empty}>{l.noTags}</Text>
         ) : (
           tags.map((tag, index) => (
             <ListRow

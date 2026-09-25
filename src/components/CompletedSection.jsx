@@ -5,6 +5,7 @@ import TaskRows from './TaskRows';
 import { confirm, showError } from './confirm';
 import { useTodoStore } from '../store/useTodoStore';
 import { colors } from '../theme';
+import { strings } from '../strings';
 
 // Listelerin altındaki "Tamamlananlar (n)" bölümü; varsayılan olarak kapalı.
 export default function CompletedSection({ tasks }) {
@@ -13,8 +14,8 @@ export default function CompletedSection({ tasks }) {
 
   async function clear() {
     const ok = await confirm({
-      title: `${tasks.length} tamamlanmış görev silinsin mi?`,
-      confirmText: 'Sil',
+      title: strings.completed.clearConfirm(tasks.length),
+      confirmText: strings.common.delete,
       destructive: true,
     });
     if (!ok) return;
@@ -30,14 +31,14 @@ export default function CompletedSection({ tasks }) {
         aria-expanded={open}
       >
         <Feather name={open ? 'chevron-down' : 'chevron-right'} size={16} color={colors.muted} />
-        <Text style={styles.title}>Tamamlananlar ({tasks.length})</Text>
+        <Text style={styles.title}>{strings.completed.title(tasks.length)}</Text>
       </TouchableOpacity>
       {open && (
         <>
           <TaskRows tasks={tasks} />
           <TouchableOpacity style={styles.clear} onPress={clear}>
             <Feather name="trash-2" size={14} color={colors.danger} />
-            <Text style={styles.clearText}>Tamamlananları sil</Text>
+            <Text style={styles.clearText}>{strings.completed.clear}</Text>
           </TouchableOpacity>
         </>
       )}

@@ -1,4 +1,7 @@
 import { addDays, parseDateKey, toDateKey } from './dates';
+import { strings } from '../strings';
+
+const t = strings.recurrence;
 
 // Tekrar kuralı:
 // { unit: 'day'|'week'|'month'|'year', interval: 1+, weekdays: number[]|null,
@@ -9,15 +12,15 @@ import { addDays, parseDateKey, toDateKey } from './dates';
 
 export const UNITS = ['day', 'week', 'month', 'year'];
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Pazartesi ile başlayan hafta
-export const WEEKDAYS_SHORT = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+export const WEEKDAYS_SHORT = strings.dates.weekdaysShort;
 const MAX_INTERVAL = 365;
 
 export const PRESETS = [
-  { key: 'daily', label: 'Her gün', rule: { unit: 'day', interval: 1, weekdays: null } },
-  { key: 'weekdays', label: 'Hafta içi', rule: { unit: 'week', interval: 1, weekdays: [1, 2, 3, 4, 5] } },
-  { key: 'weekly', label: 'Her hafta', rule: { unit: 'week', interval: 1, weekdays: null } },
-  { key: 'monthly', label: 'Her ay', rule: { unit: 'month', interval: 1, weekdays: null } },
-  { key: 'yearly', label: 'Her yıl', rule: { unit: 'year', interval: 1, weekdays: null } },
+  { key: 'daily', label: t.presets.daily, rule: { unit: 'day', interval: 1, weekdays: null } },
+  { key: 'weekdays', label: t.presets.weekdays, rule: { unit: 'week', interval: 1, weekdays: [1, 2, 3, 4, 5] } },
+  { key: 'weekly', label: t.presets.weekly, rule: { unit: 'week', interval: 1, weekdays: null } },
+  { key: 'monthly', label: t.presets.monthly, rule: { unit: 'month', interval: 1, weekdays: null } },
+  { key: 'yearly', label: t.presets.yearly, rule: { unit: 'year', interval: 1, weekdays: null } },
 ];
 
 const dayOf = key => Number(key.slice(8, 10));
@@ -28,14 +31,14 @@ const mondayIndex = weekday => (weekday + 6) % 7;
 // Kuralı doğrular ve eksikleri tamamlar. dueDate yoksa tekrar olmaz (null).
 export function normalizeRecurrence(rule, dueDate) {
   if (!rule || !dueDate) return null;
-  if (!UNITS.includes(rule.unit)) throw new Error('Geçersiz tekrar birimi');
+  if (!UNITS.includes(rule.unit)) throw new Error(strings.errors.invalidRecurrenceUnit);
   const interval = Number(rule.interval ?? 1);
   if (!Number.isInteger(interval) || interval < 1 || interval > MAX_INTERVAL) {
-    throw new Error('Geçersiz tekrar aralığı');
+    throw new Error(strings.errors.invalidRecurrenceInterval);
   }
   let weekdays = null;
   if (rule.unit === 'week' && rule.weekdays?.length) {
-    if (rule.weekdays.some(d => !Number.isInteger(d) || d < 0 || d > 6)) throw new Error('Geçersiz gün');
+    if (rule.weekdays.some(d => !Number.isInteger(d) || d < 0 || d > 6)) throw new Error(strings.errors.invalidWeekday);
     weekdays = [...new Set(rule.weekdays)].sort((a, b) => a - b);
   }
   const from = rule.from === 'completion' ? 'completion' : 'due';
@@ -90,10 +93,6 @@ export function presetKey(rule) {
   return match ? match.key : 'custom';
 }
 
-const UNIT_NAMES = { day: 'gün', week: 'hafta', month: 'ay', year: 'yıl' };
-const UNIT_EVERY = { day: 'Her gün', week: 'Her hafta', month: 'Her ay', year: 'Her yıl' };
-// "Her 3 günde bir", "Her 2 haftada bir"
-const everyN = (unit, n) => `Her ${n} ${UNIT_NAMES[unit]}${unit === 'day' ? 'de' : 'da'} bir`;
 
 // "Her gün", "Hafta içi", "Her 2 haftada bir: Pzt, Çar", "Her ay (tamamlandıktan sonra)"
 export function recurrenceLabel(rule) {
@@ -102,11 +101,11 @@ export function recurrenceLabel(rule) {
   const preset = PRESETS.find(p => p.key === presetKey(rule));
   if (preset) label = preset.label;
   else {
-    label = rule.interval === 1 ? UNIT_EVERY[rule.unit] : everyN(rule.unit, rule.interval);
+    label = rule.interval === 1 ? t.everyUnit[rule.unit] : t.everyN(rule.unit, rule.interval, t.units[rule.unit]);
     if (rule.weekdays) {
       const days = WEEKDAY_ORDER.filter(d => rule.weekdays.includes(d)).map(d => WEEKDAYS_SHORT[d]);
       label += `: ${days.join(', ')}`;
     }
   }
-  return rule.from === 'completion' ? `${label} (tamamlandıktan sonra)` : label;
+  return rule.from === 'completion' ? t.afterCompletion(label) : label;
 }

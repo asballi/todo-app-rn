@@ -7,6 +7,7 @@ import { confirm, showError } from '../../src/components/confirm';
 import { goBack } from '../../src/components/navigation';
 import { useTodoStore, isAlive } from '../../src/store/useTodoStore';
 import { colors } from '../../src/theme';
+import { strings } from '../../src/strings';
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -36,27 +37,27 @@ export default function TaskDetailScreen() {
   }
 
   async function remove() {
-    const ok = await confirm({ title: `"${task.title}" silinsin mi?`, confirmText: 'Sil', destructive: true });
+    const ok = await confirm({ title: strings.task.deleteConfirm(task.title), confirmText: strings.common.delete, destructive: true });
     if (ok) run(() => useTodoStore.getState().deleteTasks([id]));
   }
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Görev' }} />
+      <Stack.Screen options={{ title: strings.task.detailTitle }} />
       <TaskForm
         initial={task}
-        submitLabel="Kaydet"
+        submitLabel={strings.common.save}
         onSubmit={values => run(() => useTodoStore.getState().updateTask(id, values))}
       >
         <TouchableOpacity style={styles.action} onPress={() => run(() => useTodoStore.getState().toggleTask(id))}>
           <Feather name={done ? 'rotate-ccw' : 'check-circle'} size={16} color={colors.primary} />
           <Text style={styles.actionText}>
-            {done ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+            {done ? strings.task.markUndone : strings.task.markDone}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.action} onPress={remove}>
           <Feather name="trash-2" size={16} color={colors.danger} />
-          <Text style={[styles.actionText, { color: colors.danger }]}>Görevi sil</Text>
+          <Text style={[styles.actionText, { color: colors.danger }]}>{strings.task.delete}</Text>
         </TouchableOpacity>
       </TaskForm>
     </>

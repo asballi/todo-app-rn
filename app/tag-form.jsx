@@ -7,6 +7,9 @@ import ColorPicker from '../src/components/ColorPicker';
 import { confirm, showError } from '../src/components/confirm';
 import { goBack } from '../src/components/navigation';
 import { colors } from '../src/theme';
+import { strings } from '../src/strings';
+
+const t = strings.tag;
 
 // Yeni etiket (?id yok) veya mevcut etiketi düzenleme (?id=...).
 export default function TagFormScreen() {
@@ -41,9 +44,9 @@ export default function TagFormScreen() {
   async function remove() {
     const taskCount = liveRecords(useTodoStore.getState().taskTags).filter(l => l.tagId === id).length;
     const ok = await confirm({
-      title: `#${tag.name} silinsin mi?`,
-      message: taskCount > 0 ? `Etiket ${taskCount} görevden kaldırılacak; görevler silinmez.` : undefined,
-      confirmText: 'Sil',
+      title: t.deleteConfirm(tag.name),
+      message: taskCount > 0 ? t.deleteUnlinks(taskCount) : undefined,
+      confirmText: strings.common.delete,
       destructive: true,
     });
     if (!ok) return;
@@ -59,7 +62,7 @@ export default function TagFormScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen options={{ title: isEdit ? 'Etiketi düzenle' : 'Yeni etiket' }} />
+      <Stack.Screen options={{ title: isEdit ? t.edit : t.new }} />
 
       <View style={styles.preview}>
         <Text style={[styles.hash, { color: color ?? colors.tagDefault }]}>#</Text>
@@ -68,14 +71,14 @@ export default function TagFormScreen() {
           value={name}
           onChangeText={setName}
           onSubmitEditing={save}
-          placeholder="Etiket adı"
+          placeholder={t.namePlaceholder}
           placeholderTextColor="#bbb"
           autoFocus={!isEdit}
           returnKeyType="done"
         />
       </View>
 
-      <Text style={styles.label}>Renk</Text>
+      <Text style={styles.label}>{t.color}</Text>
       <ColorPicker value={color} onChange={setColor} allowNone />
 
       <TouchableOpacity
@@ -83,13 +86,13 @@ export default function TagFormScreen() {
         onPress={save}
         disabled={!canSave}
       >
-        <Text style={styles.saveText}>{isEdit ? 'Kaydet' : 'Oluştur'}</Text>
+        <Text style={styles.saveText}>{isEdit ? strings.common.save : strings.common.create}</Text>
       </TouchableOpacity>
 
       {isEdit && (
         <TouchableOpacity style={styles.deleteButton} onPress={remove}>
           <Feather name="trash-2" size={16} color={colors.danger} />
-          <Text style={styles.deleteText}>Etiketi sil</Text>
+          <Text style={styles.deleteText}>{t.delete}</Text>
         </TouchableOpacity>
       )}
     </ScrollView>

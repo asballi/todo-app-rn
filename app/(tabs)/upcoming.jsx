@@ -9,6 +9,7 @@ import TaskRows from '../../src/components/TaskRows';
 import SectionTitle from '../../src/components/SectionTitle';
 import CompletedSection from '../../src/components/CompletedSection';
 import { colors } from '../../src/theme';
+import { strings } from '../../src/strings';
 
 // Yarından başlayarak 7 gün; her günün "+" butonu o güne görev ekler.
 export default function UpcomingScreen() {
@@ -27,12 +28,12 @@ export default function UpcomingScreen() {
               title={header.title}
               subtitle={header.subtitle}
               onAdd={() => router.push({ pathname: '/task/new', params: { dueDate: day.date } })}
-              addLabel={`${header.title} için görev ekle`}
+              addLabel={strings.upcoming.addFor(header.title)}
             />
             {day.tasks.length > 0 ? (
               <TaskRows tasks={day.tasks} />
             ) : (
-              <Text style={styles.none}>Görev yok</Text>
+              <Text style={styles.none}>{strings.common.none}</Text>
             )}
           </React.Fragment>
         );
