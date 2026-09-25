@@ -19,8 +19,8 @@ const REPOSITORIES = {
 
 // Store tüm kayıtları (soft delete edilmişler dahil) tutar; ekranlar
 // yalnızca canlı kayıtları göstermek için isAlive / liveRecords kullanır.
-export const isAlive = record => !record.deletedAt;
-export const liveRecords = list => list.filter(isAlive);
+const { isAlive, liveRecords } = models;
+export { isAlive, liveRecords };
 
 function mergeById(list, records) {
   const byId = new Map(list.map(r => [r.id, r]));

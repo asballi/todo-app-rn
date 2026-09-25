@@ -7,6 +7,7 @@ import {
   dueAt,
   isOverdue,
   isCompletedOn,
+  formatDueLabel,
 } from '../dates';
 
 describe('tarih anahtarları', () => {
@@ -72,5 +73,25 @@ describe('gecikme', () => {
     const t = task({ completedAt: '2026-09-26T02:00:00.000Z' });
     expect(isCompletedOn(t, '2026-09-25')).toBe(true);
     expect(isCompletedOn(t, '2026-09-26')).toBe(false);
+  });
+});
+
+describe('formatDueLabel', () => {
+  const now = new Date(2026, 8, 25, 10, 0);
+  const label = (dueDate, dueTime = null) => formatDueLabel({ dueDate, dueTime }, now);
+
+  test('göreli günler', () => {
+    expect(label('2026-09-25')).toBe('Bugün');
+    expect(label('2026-09-26', '15:00')).toBe('Yarın 15:00');
+    expect(label('2026-09-24')).toBe('Dün');
+  });
+
+  test('aynı yıl ve farklı yıl', () => {
+    expect(label('2026-10-03')).toBe('3 Eki');
+    expect(label('2027-01-03', '09:30')).toBe('3 Oca 2027 09:30');
+  });
+
+  test('tarihsiz görev', () => {
+    expect(label(null)).toBeNull();
   });
 });

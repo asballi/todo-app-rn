@@ -55,3 +55,21 @@ export function isDueOn(task, dateKey) {
 export function isCompletedOn(task, dateKey) {
   return !!task.completedAt && toDateKey(new Date(task.completedAt)) === dateKey;
 }
+
+const MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+// "Bugün", "Yarın 15:00", "25 Eyl", "3 Oca 2027". Tarihsiz görev için null.
+export function formatDueLabel(task, now = new Date()) {
+  if (!task.dueDate) return null;
+  const today = toDateKey(now);
+  let label;
+  if (task.dueDate === today) label = 'Bugün';
+  else if (task.dueDate === addDays(today, 1)) label = 'Yarın';
+  else if (task.dueDate === addDays(today, -1)) label = 'Dün';
+  else {
+    const [y, m, d] = task.dueDate.split('-').map(Number);
+    label = `${d} ${MONTHS[m - 1]}`;
+    if (y !== now.getFullYear()) label += ` ${y}`;
+  }
+  return task.dueTime ? `${label} ${task.dueTime}` : label;
+}

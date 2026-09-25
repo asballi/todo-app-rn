@@ -125,6 +125,7 @@ app/
     search.jsx
   task/[id].jsx              → detay/düzenleme (modal)
   task/new.jsx               → yeni görev (modal)
+  category-form.jsx          → yeni/düzenle kategori (modal, ?id=...)
   manage-tags.jsx
 src/
   data/
@@ -138,7 +139,7 @@ src/
     tags.js                  → tagKey
     dates.js                 → gecikmiş/bugün/yaklaşan hesapları
     sorting.js
-    filters.js               → (6. ve 7. adım)
+    filters.js               → kategori filtreleri; akıllı listeler 6. ve 7. adımda
   components/
     TaskItem.jsx
     TaskForm.jsx
@@ -147,6 +148,10 @@ src/
     TagPicker.jsx
     CategoryPicker.jsx
     PriorityPicker.jsx
+    ColorPicker.jsx
+    IconPicker.jsx
+    confirm.js               → web'de window.confirm, mobilde Alert
+    navigation.js            → goBack: geçmiş yoksa yedek adrese git
 ```
 
 Ekranlar depolamaya doğrudan erişmez; yalnızca store ve repository üzerinden erişir.
@@ -159,7 +164,8 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
    Eski liste geçici olarak `src/legacy/LegacyTodoList.jsx` içinde Bugün sekmesinde çalışıyor; 4. ve 6. adımlarda kaldırılacak.
 2. ✅ **Veri katmanı:** storage, repository'ler, Zustand store, migration. Saf mantık için birim testleri (`jest-expo`): tarih kuralları, sıralama, migration.
    Testler `America/New_York` saat diliminde koşar (UTC gerisinde + yaz saati), böylece tarihlerin UTC olarak yorumlanması yakalanır. Çalıştırmak için: `npm test`.
-3. **Kategoriler:** Gelen Kutusu, oluşturma/düzenleme/silme, Listeler ekranı, kategori ekranı.
+3. ✅ **Kategoriler:** Gelen Kutusu, oluşturma/düzenleme/silme, Listeler ekranı, kategori ekranı.
+   `TaskItem` (öncelik renkli checkbox, tarih etiketi) ve `QuickAdd` bu adımda eklendi; 4. adımda görev detayına bağlanacak.
 4. **Görevler:** `TaskForm`, detay ve yeni görev modalları, `QuickAdd`, öncelik ve tarih seçimi.
 5. **Etiketler:** `TagPicker` (yazarak oluşturma), etiket yönetimi ekranı, etiket ekranı.
 6. **Akıllı listeler:** Bugün, Yaklaşan, Gecikmiş; varsayılan sıralama; `CompletedSection`.

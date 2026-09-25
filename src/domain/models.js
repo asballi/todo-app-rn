@@ -3,6 +3,9 @@ import { isValidDateKey, isValidTime } from './dates';
 import { tagKey } from './tags';
 
 export const PRIORITIES = [0, 1, 2, 3];
+
+export const isAlive = record => !record.deletedAt;
+export const liveRecords = list => list.filter(isAlive);
 export const DEFAULT_TAG_COLOR = null;
 
 function baseRecord(now) {
