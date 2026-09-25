@@ -1,16 +1,20 @@
 import { KEYS, readJson, writeJsonMany, removeKey } from './storage';
-import { createInbox, createTask } from '../domain/models';
+import { createInbox, createTask, withTaskDefaults } from '../domain/models';
 import { nowIso } from '../domain/ids';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 // Sürüm 1: tek '@todos' anahtarında [{ id, text, done }].
 // Sürüm 2: normalize koleksiyonlar + Gelen Kutusu.
+// Sürüm 3: görevlere reminders, recurrence, nextTaskId, checklist alanları.
 export async function runMigrations(now = new Date()) {
   const version = await readJson(KEYS.schemaVersion, 1);
 
   if (version < 2) {
     await migrateToV2(now);
+  }
+  if (version < 3) {
+    await migrateToV3();
   }
 
   // Eski anahtar, yeni veriler yazıldıktan sonra silinir. Önceki çalıştırma
@@ -48,6 +52,14 @@ async function migrateToV2(now) {
     [KEYS.categories, [createInbox(now)]],
     [KEYS.tags, []],
     [KEYS.taskTags, []],
-    [KEYS.schemaVersion, SCHEMA_VERSION],
+    [KEYS.schemaVersion, 2],
+  ]);
+}
+
+async function migrateToV3() {
+  const tasks = await readJson(KEYS.tasks, []);
+  await writeJsonMany([
+    [KEYS.tasks, tasks.map(withTaskDefaults)],
+    [KEYS.schemaVersion, 3],
   ]);
 }

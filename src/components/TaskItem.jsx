@@ -3,12 +3,15 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, priorityColors } from '../theme';
 import { formatDueLabel, isOverdue } from '../domain/dates';
+import { strings } from '../strings';
 
 export default function TaskItem({ task, tags = [], onToggle, onPress }) {
   const done = !!task.completedAt;
   const dueLabel = formatDueLabel(task);
   const overdue = isOverdue(task);
   const ringColor = priorityColors[task.priority];
+  const checklist = task.checklist ?? [];
+  const checkedCount = checklist.filter(i => i.done).length;
   // Web'de devre dışı bir dış dokunma alanı içteki checkbox'ı da kilitler;
   // bu yüzden onPress yoksa satır düz View olur.
   const Row = onPress ? TouchableOpacity : View;
@@ -31,13 +34,22 @@ export default function TaskItem({ task, tags = [], onToggle, onPress }) {
         <Text style={[styles.title, done && styles.titleDone]} numberOfLines={2}>
           {task.title}
         </Text>
-        {(dueLabel || tags.length > 0) && (
+        {(dueLabel || tags.length > 0 || checklist.length > 0) && (
           <View style={styles.meta}>
             {dueLabel && (
               <>
                 <Feather name="calendar" size={12} color={overdue ? colors.danger : colors.muted} />
                 <Text style={[styles.metaText, overdue && styles.overdue]}>{dueLabel}</Text>
               </>
+            )}
+            {checklist.length > 0 && (
+              <View
+                style={styles.progress}
+                accessibilityLabel={strings.checklist.progressLabel(checkedCount, checklist.length)}
+              >
+                <Feather name="check-square" size={12} color={colors.muted} />
+                <Text style={styles.metaText}>{strings.checklist.progress(checkedCount, checklist.length)}</Text>
+              </View>
             )}
             {tags.map(tag => (
               <Text key={tag.id} style={[styles.metaText, { color: tag.color ?? colors.tagDefault }]}>
@@ -90,6 +102,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 6,
+  },
+  progress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   metaText: {
     fontSize: 12,

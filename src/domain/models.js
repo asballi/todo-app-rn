@@ -19,6 +19,29 @@ function requireName(value, label) {
   return text;
 }
 
+// Şema v3 ile eklenen alanlar (v2 hatırlatıcılar, tekrar, kontrol listesi).
+const TASK_V3_DEFAULTS = { reminders: [], recurrence: null, nextTaskId: null, checklist: [] };
+
+export function withTaskDefaults(task) {
+  const result = { ...task };
+  for (const [key, value] of Object.entries(TASK_V3_DEFAULTS)) {
+    if (result[key] === undefined) result[key] = Array.isArray(value) ? [] : value;
+  }
+  return result;
+}
+
+export function createChecklistItem(title) {
+  return { id: newId(), title: requireName(title, 'Madde'), done: false };
+}
+
+// Boş maddeler atılır; eksik id ve done alanları tamamlanır.
+function normalizeChecklist(checklist) {
+  if (!Array.isArray(checklist)) throw new Error('Geçersiz kontrol listesi');
+  return checklist
+    .map(item => ({ id: item.id ?? newId(), title: (item.title ?? '').trim(), done: !!item.done }))
+    .filter(item => item.title);
+}
+
 function validateTaskFields(fields) {
   const task = { ...fields };
   task.title = requireName(task.title, 'Görev başlığı');
@@ -30,6 +53,7 @@ function validateTaskFields(fields) {
   // Saat yalnızca bir güne bağlı olarak anlamlıdır.
   if (!task.dueDate) task.dueTime = null;
   if (!PRIORITIES.includes(task.priority)) throw new Error('Geçersiz öncelik');
+  task.checklist = normalizeChecklist(task.checklist ?? []);
   return task;
 }
 
@@ -43,10 +67,14 @@ export function createTask(input, now = new Date()) {
     dueTime: input.dueTime ?? null,
     priority: input.priority ?? 0,
     completedAt: null,
+    reminders: [],
+    recurrence: null,
+    nextTaskId: null,
+    checklist: input.checklist ?? [],
   });
 }
 
-const EDITABLE_TASK_FIELDS = ['title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority'];
+const EDITABLE_TASK_FIELDS = ['title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority', 'checklist'];
 
 export function updateTask(task, changes, now = new Date()) {
   const next = { ...task };

@@ -67,3 +67,30 @@ test('okunamayan eski veri silinmez ve hata verilir', async () => {
   expect(await AsyncStorage.getItem(KEYS.legacyTodos)).toBe('{bozuk');
   expect(await AsyncStorage.getItem(KEYS.schemaVersion)).toBeNull();
 });
+
+test('v2 verisine v3 alanlarını ekler, mevcut değerlere dokunmaz', async () => {
+  await AsyncStorage.setItem(KEYS.schemaVersion, '2');
+  await AsyncStorage.setItem(KEYS.categories, JSON.stringify([{ id: INBOX_ID }]));
+  await AsyncStorage.setItem(
+    KEYS.tasks,
+    JSON.stringify([
+      { id: 'a', title: 'eski' },
+      { id: 'b', title: 'kısmi', checklist: [{ id: 'c1', title: 'x', done: true }] },
+    ]),
+  );
+
+  await runMigrations(NOW);
+
+  const [a, b] = await readJson(KEYS.tasks);
+  expect(a).toEqual({ id: 'a', title: 'eski', reminders: [], recurrence: null, nextTaskId: null, checklist: [] });
+  expect(b.checklist).toEqual([{ id: 'c1', title: 'x', done: true }]);
+  expect(await readJson(KEYS.schemaVersion)).toBe(3);
+  expect(await readJson(KEYS.categories)).toEqual([{ id: INBOX_ID }]);
+});
+
+test('eski @todos verisi doğrudan v3 biçimine gelir', async () => {
+  await AsyncStorage.setItem(KEYS.legacyTodos, JSON.stringify([{ id: 1, text: 'a', done: false }]));
+  await runMigrations(NOW);
+  const [task] = await readJson(KEYS.tasks);
+  expect(task).toMatchObject({ reminders: [], recurrence: null, nextTaskId: null, checklist: [] });
+});

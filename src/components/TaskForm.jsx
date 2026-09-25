@@ -5,6 +5,8 @@ import DateInput from './DateInput';
 import PriorityPicker from './PriorityPicker';
 import CategoryPicker from './CategoryPicker';
 import TagPicker from './TagPicker';
+import ChecklistEditor from './ChecklistEditor';
+import { strings } from '../strings';
 import { quickDueDates } from '../domain/dates';
 import { colors } from '../theme';
 
@@ -20,6 +22,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
   const [dueTime, setDueTime] = useState(initial.dueTime);
   const [priority, setPriority] = useState(initial.priority);
   const [tagIds, setTagIds] = useState(initial.tagIds ?? []);
+  const [checklist, setChecklist] = useState(initial.checklist ?? []);
   const [saving, setSaving] = useState(false);
 
   const canSave = title.trim().length > 0 && !saving;
@@ -33,7 +36,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
     if (!canSave) return;
     setSaving(true);
     try {
-      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority, tagIds });
+      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority, tagIds, checklist });
     } finally {
       setSaving(false);
     }
@@ -61,6 +64,9 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
           accessibilityLabel="Not"
         />
       </View>
+
+      <Text style={styles.label}>{strings.checklist.title}</Text>
+      <ChecklistEditor value={checklist} onChange={setChecklist} />
 
       <Text style={styles.label}>Tarih</Text>
       <View style={styles.row}>

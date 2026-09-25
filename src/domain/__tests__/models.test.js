@@ -1,4 +1,4 @@
-import { createTask, updateTask, toggleTask, createTag } from '../models';
+import { createTask, updateTask, toggleTask, createTag, createChecklistItem } from '../models';
 import { INBOX_ID, newId } from '../ids';
 import { tagKey } from '../tags';
 
@@ -54,4 +54,28 @@ test('etiket anahtarı Türkçe büyük/küçük harf kurallarına uyar', () => 
   expect(tagKey('IŞIK')).toBe('ışık');
   expect(tagKey(' Acil ')).toBe('acil');
   expect(createTag({ name: 'İŞ' }).nameKey).toBe(tagKey('iş'));
+});
+
+describe('kontrol listesi', () => {
+  test('yeni görevde boş liste ve v3 alanları', () => {
+    expect(createTask({ title: 'x' })).toMatchObject({ checklist: [], reminders: [], recurrence: null, nextTaskId: null });
+  });
+
+  test('boş maddeler atılır, eksik alanlar tamamlanır', () => {
+    const task = createTask({ title: 'x', checklist: [{ title: '  süt ' }, { title: '   ' }, { id: 'k', title: 'ekmek', done: 1 }] });
+    expect(task.checklist).toHaveLength(2);
+    expect(task.checklist[0]).toMatchObject({ title: 'süt', done: false });
+    expect(task.checklist[0].id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(task.checklist[1]).toEqual({ id: 'k', title: 'ekmek', done: true });
+  });
+
+  test('updateTask kontrol listesini günceller', () => {
+    const task = createTask({ title: 'x' });
+    const next = updateTask(task, { checklist: [createChecklistItem('madde')] });
+    expect(next.checklist.map(i => i.title)).toEqual(['madde']);
+  });
+
+  test('createChecklistItem boş başlığı reddeder', () => {
+    expect(() => createChecklistItem('  ')).toThrow('boş olamaz');
+  });
 });

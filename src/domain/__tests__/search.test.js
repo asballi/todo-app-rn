@@ -51,6 +51,11 @@ describe('sorgu', () => {
     expect(titles(searchTasks(tasks, links, { query: 'ÇEYREK' }))).toEqual(['Rapor yaz']);
   });
 
+  test('kontrol listesi maddelerinde de arar', () => {
+    const shopping = task('Market', { checklist: [{ id: 'i1', title: 'Yoğurt', done: false }] });
+    expect(titles(searchTasks([...tasks, shopping], links, { query: 'yogurt' }))).toEqual(['Market']);
+  });
+
   test('her kelime geçmeli, sıra önemsiz', () => {
     expect(titles(searchTasks(tasks, links, { query: 'al süt' }))).toEqual(['Süt al']);
     expect(searchTasks(tasks, links, { query: 'süt rapor' })).toEqual([]);

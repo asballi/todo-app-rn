@@ -118,7 +118,8 @@ export function hasSearchCriteria({ query = '', categoryId = null, tagIds = [], 
   return query.trim().length > 0 || categoryId != null || tagIds.length > 0 || priorities.length > 0;
 }
 
-// Başlık ve notlarda arama + filtreler. Sorgudaki her kelime geçmelidir.
+// Başlık, not ve kontrol listesi maddelerinde arama + filtreler.
+// Sorgudaki her kelime geçmelidir.
 // categoryId: tek kategori (null = hepsi); tagIds: hepsi olmalı (VE);
 // priorities: herhangi biri (VEYA, boş = hepsi).
 export function searchTasks(tasks, taskTags, { query = '', categoryId = null, tagIds = [], priorities = [] }) {
@@ -141,7 +142,8 @@ export function searchTasks(tasks, taskTags, { query = '', categoryId = null, ta
         if (!own || !tagIds.every(id => own.has(id))) return false;
       }
       if (words.length > 0) {
-        const haystack = foldForSearch(`${task.title} ${task.notes ?? ''}`);
+        const items = (task.checklist ?? []).map(i => i.title).join(' ');
+        const haystack = foldForSearch(`${task.title} ${task.notes ?? ''} ${items}`);
         if (!words.every(w => haystack.includes(w))) return false;
       }
       return true;
