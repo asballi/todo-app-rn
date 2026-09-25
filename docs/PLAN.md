@@ -27,8 +27,9 @@ Web + mobilde çalışan, öğrenme amaçlı, kapsamlı bir todo uygulaması.
 
 ### Tarih ve akıllı listeler
 - Saatsiz görev, o gün bittiğinde gecikmiş sayılır; saatli görev, o saat geçince.
-- **Bugün:** bugünün görevleri; gecikmişler en üstte ayrı bölümde; tamamlananlar bölümünde yalnızca bugün tamamlananlar.
-- **Yaklaşan:** önümüzdeki 7 gün, güne göre gruplu.
+- **Bugün:** bugünün görevleri; gecikmişler en üstte ayrı bölümde; tamamlananlar bölümünde yalnızca bugün tamamlanan ve bitişi bugün ya da daha önce olan görevler (Bugün listesine ait olanlar).
+- **Yaklaşan:** yarından başlayarak 7 gün, güne göre gruplu; boş günler de listelenir ve her günün "+" butonu o güne görev ekler. Bugünün görevleri yalnızca Bugün'de görünür.
+- Ekranlar "şimdi"yi dakikada bir günceller (`useNow`): saatli görev ekran açıkken gecikmişe geçer, gece yarısı gün değişir.
 - **Gecikmiş:** Listeler sekmesinden erişilen akıllı liste.
 - Tarihsiz görevler akıllı listelerde görünmez, yalnızca kendi kategorisinde görünür.
 - Tamamlanan görev gecikmiş sayılmaz.
@@ -122,6 +123,7 @@ app/
       index.jsx              → Kategoriler + Etiketler + Gecikmiş
       category/[id].jsx
       tag/[id].jsx
+      overdue.jsx            → Gecikmiş akıllı listesi
     search.jsx
   task/[id].jsx              → detay/düzenleme (modal)
   task/new.jsx               → yeni görev (modal)
@@ -146,6 +148,9 @@ src/
     TaskForm.jsx
     QuickAdd.jsx
     CompletedSection.jsx
+    TaskRows.jsx             → görev satırları (detay + tamamla bağlı)
+    SectionTitle.jsx
+    EmptyState.jsx
     TagPicker.jsx
     CategoryPicker.jsx
     PriorityPicker.jsx
@@ -166,7 +171,7 @@ Ekranlar depolamaya doğrudan erişmez; yalnızca store ve repository üzerinden
 Her adım ayrı, çalışır durumda bir commit/PR olmalı.
 
 1. ✅ **Altyapı:** `expo-router` kurulumu, giriş noktasının `expo-router/entry` olması, sekme iskeleti, `App.js`'in kaldırılması. `devDependencies` içindeki çakışan `babel-preset-expo ~12.0.0` düzeltmesi.
-   Eski liste geçici olarak `src/legacy/LegacyTodoList.jsx` içinde Bugün sekmesinde çalışıyor; 4. ve 6. adımlarda kaldırılacak.
+   (Geçici eski liste 6. adımda kaldırıldı.)
 2. ✅ **Veri katmanı:** storage, repository'ler, Zustand store, migration. Saf mantık için birim testleri (`jest-expo`): tarih kuralları, sıralama, migration.
    Testler `America/New_York` saat diliminde koşar (UTC gerisinde + yaz saati), böylece tarihlerin UTC olarak yorumlanması yakalanır. Çalıştırmak için: `npm test`.
 3. ✅ **Kategoriler:** Gelen Kutusu, oluşturma/düzenleme/silme, Listeler ekranı, kategori ekranı.
@@ -175,7 +180,8 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
    `QuickAdd` ayrıntı butonu, yazılan başlık ve ekranın varsayılanlarıyla tam formu açar. Bugün sekmesindeki geçici listede satır içi düzenleme kaldırıldı (K10).
 5. ✅ **Etiketler:** `TagPicker` (yazarak oluşturma), etiket yönetimi ekranı, etiket ekranı.
    Görev satırlarında etiketler `#ad` olarak görünür. `updateTask` `tagIds` ile görev ve bağları tek işlemde kaydeder. `/task/new` `tagIds` parametresini (virgülle ayrılmış) kabul eder.
-6. **Akıllı listeler:** Bugün, Yaklaşan, Gecikmiş; varsayılan sıralama; `CompletedSection`.
+6. ✅ **Akıllı listeler:** Bugün, Yaklaşan, Gecikmiş; varsayılan sıralama; `CompletedSection`.
+   Kategori ve etiket ekranları da açık görevler + katlanabilir Tamamlananlar bölümü gösterir. Listeler yığınında `initialRouteName: 'index'`: doğrudan URL ile açılan sayfanın altında Listeler ekranı olur.
 7. **Arama:** başlık/not araması + kategori, etiket (VE) ve öncelik filtreleri.
 
 ## Sonraki sürümler

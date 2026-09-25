@@ -10,6 +10,8 @@ import {
   formatDueLabel,
   toTimeString,
   quickDueDates,
+  formatLongDate,
+  formatDayHeader,
 } from '../dates';
 
 describe('tarih anahtarları', () => {
@@ -109,4 +111,14 @@ test('quickDueDates bugün, yarın ve bir hafta sonrası', () => {
     '2027-01-01',
     '2027-01-07',
   ]);
+});
+
+test('formatLongDate Türkçe gün ve ay adı', () => {
+  expect(formatLongDate(new Date(2026, 8, 25))).toBe('Cuma, 25 Eylül');
+});
+
+test('formatDayHeader yarın için "Yarın", sonrası için gün adı', () => {
+  const now = new Date(2026, 8, 25, 23, 0);
+  expect(formatDayHeader('2026-09-26', now)).toEqual({ title: 'Yarın', subtitle: '26 Eylül' });
+  expect(formatDayHeader('2026-09-28', now)).toEqual({ title: 'Pazartesi', subtitle: '28 Eylül' });
 });

@@ -1,12 +1,56 @@
-import React from 'react';
-import Placeholder from '../../src/components/Placeholder';
+import React, { useMemo } from 'react';
+import { Text, ScrollView, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useTodoStore } from '../../src/store/useTodoStore';
+import { useNow } from '../../src/store/hooks';
+import { upcomingView } from '../../src/domain/filters';
+import { formatDayHeader } from '../../src/domain/dates';
+import TaskRows from '../../src/components/TaskRows';
+import SectionTitle from '../../src/components/SectionTitle';
+import CompletedSection from '../../src/components/CompletedSection';
+import { colors } from '../../src/theme';
 
+// Yarından başlayarak 7 gün; her günün "+" butonu o güne görev ekler.
 export default function UpcomingScreen() {
+  const router = useRouter();
+  const now = useNow();
+  const tasks = useTodoStore(s => s.tasks);
+  const view = useMemo(() => upcomingView(tasks, now), [tasks, now]);
+
   return (
-    <Placeholder
-      icon="calendar"
-      title="Yaklaşan"
-      description="Önümüzdeki 7 günün görevleri burada, güne göre gruplu görünecek."
-    />
+    <ScrollView contentContainerStyle={styles.content}>
+      {view.days.map(day => {
+        const header = formatDayHeader(day.date, now);
+        return (
+          <React.Fragment key={day.date}>
+            <SectionTitle
+              title={header.title}
+              subtitle={header.subtitle}
+              onAdd={() => router.push({ pathname: '/task/new', params: { dueDate: day.date } })}
+              addLabel={`${header.title} için görev ekle`}
+            />
+            {day.tasks.length > 0 ? (
+              <TaskRows tasks={day.tasks} />
+            ) : (
+              <Text style={styles.none}>Görev yok</Text>
+            )}
+          </React.Fragment>
+        );
+      })}
+      <CompletedSection tasks={view.completed} />
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    padding: 16,
+    paddingTop: 4,
+  },
+  none: {
+    fontSize: 13,
+    color: '#bbb',
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+  },
+});

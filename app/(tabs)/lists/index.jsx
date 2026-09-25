@@ -2,11 +2,13 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTodoStore } from '../../../src/store/useTodoStore';
+import { useNow } from '../../../src/store/hooks';
 import {
   sortCategories,
   openTaskCountsByCategory,
   sortTags,
   openTaskCountsByTag,
+  overdueTasks,
 } from '../../../src/domain/filters';
 import { ListRow, SectionHeader, listStyles } from '../../../src/components/ListRow';
 import { colors } from '../../../src/theme';
@@ -22,9 +24,23 @@ export default function ListsScreen() {
   const tags = useMemo(() => sortTags(allTags), [allTags]);
   const categoryCounts = useMemo(() => openTaskCountsByCategory(tasks), [tasks]);
   const tagCounts = useMemo(() => openTaskCountsByTag(tasks, taskTags), [tasks, taskTags]);
+  const now = useNow();
+  const overdueCount = useMemo(() => overdueTasks(tasks, now).length, [tasks, now]);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <SectionHeader title="Akıllı listeler" />
+      <View style={listStyles.card}>
+        <ListRow
+          first
+          icon="alert-circle"
+          color={colors.danger}
+          name="Gecikmiş"
+          count={overdueCount}
+          onPress={() => router.push('/lists/overdue')}
+        />
+      </View>
+
       <SectionHeader title="Kategoriler" actionLabel="Yeni kategori" onAction={() => router.push('/category-form')} />
       <View style={listStyles.card}>
         {categories.map((category, index) => (

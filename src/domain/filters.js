@@ -1,6 +1,7 @@
 import { liveRecords } from './models';
 import { sortTasks } from './sorting';
 import { tagKey } from './tags';
+import { toDateKey, addDays, isOverdue, isCompletedOn } from './dates';
 
 export function sortCategories(categories) {
   return liveRecords(categories).sort(
@@ -59,4 +60,53 @@ export function suggestTags(tags, query, excludeIds = []) {
   const key = tagKey(query);
   const exclude = new Set(excludeIds);
   return sortTags(tags).filter(t => !exclude.has(t.id) && t.nameKey.includes(key));
+}
+
+// --- Akıllı listeler ---
+
+// Bugün: gecikmişler ayrı bölümde; tamamlananlarda yalnızca bugün tamamlanan
+// ve bitişi bugün ya da daha önce olan görevler (yani Bugün listesine ait olanlar).
+export function todayView(tasks, now = new Date()) {
+  const today = toDateKey(now);
+  const overdue = [];
+  const due = [];
+  const completed = [];
+  for (const task of liveRecords(tasks)) {
+    if (task.completedAt) {
+      if (task.dueDate && task.dueDate <= today && isCompletedOn(task, today)) completed.push(task);
+    } else if (isOverdue(task, now)) {
+      overdue.push(task);
+    } else if (task.dueDate === today) {
+      due.push(task);
+    }
+  }
+  return { overdue: sortTasks(overdue), today: sortTasks(due), completed: sortTasks(completed) };
+}
+
+// Yaklaşan: yarından başlayarak `days` gün; her gün boş olsa da listelenir.
+export function upcomingView(tasks, now = new Date(), days = 7) {
+  const today = toDateKey(now);
+  const groups = Array.from({ length: days }, (_, i) => ({ date: addDays(today, i + 1), tasks: [] }));
+  const byDate = new Map(groups.map(g => [g.date, g]));
+  const completed = [];
+  for (const task of liveRecords(tasks)) {
+    const group = byDate.get(task.dueDate);
+    if (!group) continue;
+    if (task.completedAt) completed.push(task);
+    else group.tasks.push(task);
+  }
+  for (const group of groups) group.tasks = sortTasks(group.tasks);
+  return { days: groups, completed: sortTasks(completed) };
+}
+
+export function overdueTasks(tasks, now = new Date()) {
+  return sortTasks(liveRecords(tasks).filter(t => isOverdue(t, now)));
+}
+
+// Sıralı bir görev listesini açık ve tamamlanmış olarak ayırır (sıra korunur).
+export function splitCompleted(tasks) {
+  return {
+    open: tasks.filter(t => !t.completedAt),
+    completed: tasks.filter(t => t.completedAt),
+  };
 }

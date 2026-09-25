@@ -87,3 +87,21 @@ export function quickDueDates(now = new Date()) {
     { label: 'Gelecek hafta', value: addDays(today, 7) },
   ];
 }
+
+const MONTHS_LONG = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+];
+const WEEKDAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+// "Cuma, 25 Eylül"
+export function formatLongDate(date) {
+  return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS_LONG[date.getMonth()]}`;
+}
+
+// Yaklaşan listesindeki gün başlıkları: { title: "Yarın" | "Pazartesi", subtitle: "28 Eylül" }
+export function formatDayHeader(dateKey, now = new Date()) {
+  const date = parseDateKey(dateKey);
+  const title = dateKey === addDays(toDateKey(now), 1) ? 'Yarın' : WEEKDAYS[date.getDay()];
+  return { title, subtitle: `${date.getDate()} ${MONTHS_LONG[date.getMonth()]}` };
+}
