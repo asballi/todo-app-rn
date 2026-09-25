@@ -50,6 +50,13 @@ Web + mobilde çalışan, öğrenme amaçlı, kapsamlı bir todo uygulaması.
 | Etiket | o etiket eklenir |
 | Diğer | Gelen Kutusu |
 
+### Arama
+- Başlık ve notlarda arar; büyük/küçük harf ve Türkçe karakter farkı yok sayılır (`sut` → "Süt", `ISIK` → "ışık").
+- Sorgudaki her kelime geçmelidir; sıra önemsizdir.
+- Filtreler: kategori tek seçim (tekrar basınca kalkar), etiketler **VE**, öncelikler **VEYA**.
+- Sorgu ya da filtre yokken sonuç gösterilmez; tamamlanan sonuçlar katlanabilir bölümdedir.
+- Silinen bir kategori/etiket filtrede seçiliyse filtre kendiliğinden düşer.
+
 ### Tamamlama ve silme
 - Tamamlanınca `completedAt` yazılır; işaret kaldırılınca `null` olur.
 - Silme her zaman soft delete (`deletedAt`). "Tamamlananları sil" butonu tamamlananlar bölümünün içindedir.
@@ -140,6 +147,7 @@ src/
     ids.js                   → newId, INBOX_ID
     models.js                → kayıt oluşturma/güncelleme + doğrulama
     tags.js                  → tagKey
+    text.js                  → turkishLower, foldForSearch
     dates.js                 → gecikmiş/bugün/yaklaşan hesapları
     sorting.js
     filters.js               → kategori filtreleri; akıllı listeler 6. ve 7. adımda
@@ -182,7 +190,9 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
    Görev satırlarında etiketler `#ad` olarak görünür. `updateTask` `tagIds` ile görev ve bağları tek işlemde kaydeder. `/task/new` `tagIds` parametresini (virgülle ayrılmış) kabul eder.
 6. ✅ **Akıllı listeler:** Bugün, Yaklaşan, Gecikmiş; varsayılan sıralama; `CompletedSection`.
    Kategori ve etiket ekranları da açık görevler + katlanabilir Tamamlananlar bölümü gösterir. Listeler yığınında `initialRouteName: 'index'`: doğrudan URL ile açılan sayfanın altında Listeler ekranı olur.
-7. **Arama:** başlık/not araması + kategori, etiket (VE) ve öncelik filtreleri.
+7. ✅ **Arama:** başlık/not araması + kategori, etiket (VE) ve öncelik filtreleri.
+
+**v1 tamamlandı.**
 
 ## Sonraki sürümler
 

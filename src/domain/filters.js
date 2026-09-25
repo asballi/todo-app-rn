@@ -1,6 +1,7 @@
 import { liveRecords } from './models';
 import { sortTasks } from './sorting';
 import { tagKey } from './tags';
+import { foldForSearch } from './text';
 import { toDateKey, addDays, isOverdue, isCompletedOn } from './dates';
 
 export function sortCategories(categories) {
@@ -109,4 +110,41 @@ export function splitCompleted(tasks) {
     open: tasks.filter(t => !t.completedAt),
     completed: tasks.filter(t => t.completedAt),
   };
+}
+
+// --- Arama ---
+
+export function hasSearchCriteria({ query = '', categoryId = null, tagIds = [], priorities = [] }) {
+  return query.trim().length > 0 || categoryId != null || tagIds.length > 0 || priorities.length > 0;
+}
+
+// Başlık ve notlarda arama + filtreler. Sorgudaki her kelime geçmelidir.
+// categoryId: tek kategori (null = hepsi); tagIds: hepsi olmalı (VE);
+// priorities: herhangi biri (VEYA, boş = hepsi).
+export function searchTasks(tasks, taskTags, { query = '', categoryId = null, tagIds = [], priorities = [] }) {
+  const words = foldForSearch(query).split(/\s+/).filter(Boolean);
+  let tagsOf = null;
+  if (tagIds.length > 0) {
+    tagsOf = new Map();
+    for (const link of liveRecords(taskTags)) {
+      if (!tagsOf.has(link.taskId)) tagsOf.set(link.taskId, new Set());
+      tagsOf.get(link.taskId).add(link.tagId);
+    }
+  }
+
+  return sortTasks(
+    liveRecords(tasks).filter(task => {
+      if (categoryId != null && task.categoryId !== categoryId) return false;
+      if (priorities.length > 0 && !priorities.includes(task.priority)) return false;
+      if (tagsOf) {
+        const own = tagsOf.get(task.id);
+        if (!own || !tagIds.every(id => own.has(id))) return false;
+      }
+      if (words.length > 0) {
+        const haystack = foldForSearch(`${task.title} ${task.notes ?? ''}`);
+        if (!words.every(w => haystack.includes(w))) return false;
+      }
+      return true;
+    }),
+  );
 }
