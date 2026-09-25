@@ -277,6 +277,40 @@ describe('geri alma', () => {
   });
 });
 
+describe('yedekleme', () => {
+  test('dışa aktarılan yedek başka bir cihaza birleştirilir ve geri alınabilir', async () => {
+    const tag = await store().findOrCreateTag('acil');
+    await store().addTask({ title: 'Yedekteki görev', tagIds: [tag.id] });
+    const text = JSON.stringify(store().exportBackup());
+
+    // Başka bir cihaz: boş veri + kendi görevi
+    await AsyncStorage.clear();
+    useTodoStore.setState(initialState);
+    await store().init();
+    await store().addTask({ title: 'Yerel görev' });
+
+    const preview = store().previewImport(text);
+    expect(preview.summary.tasks).toEqual({ added: 1, updated: 0, deleted: 0 });
+    expect(preview.summary.tags).toEqual({ added: 1, updated: 0, deleted: 0 });
+    // Gelen Kutusu iki tarafta da aynı kimlikte; daha yeni olan kazanır.
+    await store().importBackup(preview);
+
+    expect(liveRecords(store().tasks).map(t => t.title).sort()).toEqual(['Yedekteki görev', 'Yerel görev']);
+    expect(liveRecords(await persisted('tasks'))).toHaveLength(2);
+    expect(store().lastUndo.label).toBe('Yedek içe aktarıldı');
+
+    await store().undo();
+    expect(liveRecords(store().tasks).map(t => t.title)).toEqual(['Yerel görev']);
+    expect(liveRecords(store().tags)).toEqual([]);
+  });
+
+  test('bozuk yedek hiçbir şeyi değiştirmez', async () => {
+    await store().addTask({ title: 'x' });
+    expect(() => store().previewImport('{bozuk')).toThrow('geçerli bir yedek değil');
+    expect(store().tasks).toHaveLength(1);
+  });
+});
+
 describe('kategoriler', () => {
   test('Gelen Kutusu silinemez ama yeniden adlandırılabilir', async () => {
     await expect(store().deleteCategory(INBOX_ID)).rejects.toThrow('silinemez');

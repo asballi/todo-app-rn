@@ -12,6 +12,7 @@ import { tagKey } from '../domain/tags';
 import { nextDueDate } from '../domain/recurrence';
 import { DEFAULT_REMINDER_TIME } from '../domain/reminders';
 import { isValidTime } from '../domain/dates';
+import { parseBackup, mergeBackup, buildBackup, hasChanges } from '../data/backup';
 import * as models from '../domain/models';
 import { strings } from '../strings';
 
@@ -227,6 +228,26 @@ export const useTodoStore = create((set, get) => {
     async setTaskTags(taskId, tagIds) {
       findAlive('tasks', taskId);
       await commit({ taskTags: tagLinkChanges(taskId, tagIds) });
+    },
+
+    // --- Yedekleme ---
+
+    exportBackup() {
+      return buildBackup(get());
+    },
+
+    // Yedek metnini doğrular ve birleştirme özetini döndürür (henüz bir şey yazmaz).
+    previewImport(text) {
+      const backup = parseBackup(text);
+      const { changes, summary } = mergeBackup(get(), backup);
+      return { changes, summary, hasChanges: hasChanges(changes) };
+    },
+
+    // Önizlemesi alınmış değişiklikleri uygular; geri alınabilir. Ayarlar
+    // cihaza özel tercih sayıldığı için içe aktarılmaz.
+    async importBackup(preview) {
+      if (!preview.hasChanges) return;
+      await commit(preview.changes, u.imported);
     },
 
     // --- Ayarlar ---

@@ -177,6 +177,7 @@ export const strings = {
     tasksDeleted: n => (n === 1 ? 'Görev silindi' : `${n} görev silindi`),
     categoryDeleted: name => `"${name}" kategorisi silindi`,
     tagDeleted: name => `#${name} etiketi silindi`,
+    imported: 'Yedek içe aktarıldı',
   },
 
   checklist: {
@@ -227,6 +228,27 @@ export const strings = {
     bannerDismiss: 'Hatırlatıcıyı kapat',
   },
 
+  backup: {
+    title: 'Yedekleme',
+    help: 'Yedek, silinmiş kayıtlar dahil tüm görevleri, kategorileri ve etiketleri içerir. İçe aktarma mevcut verilerle birleştirir; aynı kayıt iki tarafta da varsa en son güncellenen kazanır.',
+    export: 'Dışa aktar',
+    import: 'İçe aktar',
+    confirmTitle: 'Yedek içe aktarılsın mı?',
+    confirm: 'İçe aktar',
+    nothingToImport: 'Bu yedekte eklenecek ya da güncellenecek bir şey yok.',
+    // { tasks: { added, updated, deleted }, ... } → "3 görev eklenecek, 1 görev silinecek."
+    summary: summary => {
+      const names = { tasks: 'görev', categories: 'kategori', tags: 'etiket', taskTags: 'etiket bağı' };
+      const parts = [];
+      for (const [collection, { added, updated, deleted }] of Object.entries(summary)) {
+        if (added) parts.push(`${added} ${names[collection]} eklenecek`);
+        if (updated) parts.push(`${updated} ${names[collection]} güncellenecek`);
+        if (deleted) parts.push(`${deleted} ${names[collection]} silinecek`);
+      }
+      return parts.length ? `${parts.join(', ')}.` : 'Yalnızca silinmiş kayıtlar eşitlenecek; görünen bir değişiklik olmayacak.';
+    },
+  },
+
   settings: {
     title: 'Ayarlar',
     open: 'Ayarlar',
@@ -269,5 +291,7 @@ export const strings = {
     duplicateTag: 'Bu adla bir etiket zaten var',
     inboxUndeletable: 'Gelen Kutusu silinemez',
     legacyUnreadable: message => `Eski görevler okunamadı: ${message}`,
+    backupInvalid: 'Bu dosya geçerli bir yedek değil.',
+    backupTooNew: 'Bu yedek uygulamanın daha yeni bir sürümünden alınmış. Önce uygulamayı güncelle.',
   },
 };

@@ -2,13 +2,46 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import DateInput from '../src/components/DateInput';
-import { showError } from '../src/components/confirm';
+import { confirm, showError } from '../src/components/confirm';
+import { saveBackupFile, pickBackupFile } from '../src/data/backupFile';
+import { backupFileName } from '../src/data/backup';
 import { useTodoStore } from '../src/store/useTodoStore';
 import { useNotificationPermission } from '../src/notifications/useReminders';
 import { strings } from '../src/strings';
 import { colors } from '../src/theme';
 
 const t = strings.settings;
+
+async function exportBackup() {
+  try {
+    const backup = useTodoStore.getState().exportBackup();
+    await saveBackupFile(backupFileName(), JSON.stringify(backup, null, 2));
+  } catch (e) {
+    showError(e);
+  }
+}
+
+// Dosya seçilir, doğrulanır, özet onaylanınca birleştirilir (geri alınabilir).
+async function importBackup() {
+  try {
+    const text = await pickBackupFile();
+    if (text == null) return;
+    const store = useTodoStore.getState();
+    const preview = store.previewImport(text);
+    if (!preview.hasChanges) {
+      showError(new Error(strings.backup.nothingToImport));
+      return;
+    }
+    const ok = await confirm({
+      title: strings.backup.confirmTitle,
+      message: strings.backup.summary(preview.summary),
+      confirmText: strings.backup.confirm,
+    });
+    if (ok) await store.importBackup(preview);
+  } catch (e) {
+    showError(e);
+  }
+}
 
 export default function SettingsScreen() {
   const defaultReminderTime = useTodoStore(s => s.settings.defaultReminderTime);
@@ -37,6 +70,19 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         )}
         {Platform.OS === 'web' && <Text style={styles.help}>{strings.reminders.webNote}</Text>}
+      </View>
+
+      <Text style={styles.label}>{strings.backup.title}</Text>
+      <View style={styles.card}>
+        <Text style={styles.help}>{strings.backup.help}</Text>
+        <View style={styles.buttons}>
+          <TouchableOpacity style={styles.button} onPress={exportBackup}>
+            <Text style={styles.buttonText}>{strings.backup.export}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={importBackup}>
+            <Text style={[styles.buttonText, styles.secondaryButtonText]}>{strings.backup.import}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -75,6 +121,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  secondaryButtonText: {
+    color: colors.primary,
   },
   buttonText: {
     color: '#fff',
