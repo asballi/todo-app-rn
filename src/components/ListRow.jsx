@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useThemedStyles, useTheme } from '../theme';
+import { onColor, useThemedStyles, useTheme } from '../theme';
 
 // Listeler ve etiket yönetimi ekranlarındaki satırlar: renkli simge, ad, sayı.
 export function ListRow({ icon, color, name, count, first, onPress }) {
@@ -10,7 +10,7 @@ export function ListRow({ icon, color, name, count, first, onPress }) {
   return (
     <TouchableOpacity style={[styles.row, !first && styles.rowBorder]} onPress={onPress}>
       <View style={[styles.icon, { backgroundColor: color }]}>
-        <Feather name={icon} size={16} color={colors.onPrimary} />
+        <Feather name={icon} size={16} color={onColor(color)} />
       </View>
       <Text style={styles.name} numberOfLines={1}>{name}</Text>
       {count > 0 && <Text style={styles.count}>{count}</Text>}

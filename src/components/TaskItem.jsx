@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { priorityColors, useThemedStyles, useTheme } from '../theme';
+import { onColor, priorityColors, useThemedStyles, useTheme } from '../theme';
 import { formatDueLabel, isOverdue } from '../domain/dates';
 import { strings } from '../strings';
 import { recurrenceLabel } from '../domain/recurrence';
@@ -29,7 +29,7 @@ export default function TaskItem({ task, tags = [], onToggle, onPress }) {
         hitSlop={8}
       >
         <View style={[styles.checkbox, { borderColor: ringColor }, done && { backgroundColor: ringColor }]}>
-          {done && <Feather name="check" size={13} color={colors.onPrimary} />}
+          {done && <Feather name="check" size={13} color={onColor(ringColor)} />}
         </View>
       </TouchableOpacity>
 

@@ -46,7 +46,7 @@ test('izin verilmiş: ayarlar, seçici sınırları, şerit, arka plan bildirimi
     await page.getByLabel('Ayarlar').click();
     await expect(text(page, 'Bildirim izni verildi.')).toBeVisible();
     await page.getByLabel('Saat', { exact: true }).fill('08:00');
-    await expect.poll(() => stored(page, 'settings')).toEqual({ defaultReminderTime: '08:00' });
+    await expect.poll(() => stored(page, 'settings')).toEqual({ defaultReminderTime: '08:00', theme: 'system' });
   });
 
   await test.step('seçici: en fazla 3; saatsiz görevde varsayılan saat notu', async () => {

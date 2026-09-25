@@ -18,6 +18,9 @@ import { strings } from '../strings';
 
 const u = strings.undo;
 
+// Ayarlardaki tema seçimi: cihaz tercihini izle, hep açık, hep koyu.
+export const THEME_MODES = ['system', 'light', 'dark'];
+
 const REPOSITORIES = {
   tasks: taskRepository,
   categories: categoryRepository,
@@ -43,7 +46,7 @@ export const initialState = {
   categories: [],
   tags: [],
   taskTags: [],
-  settings: { defaultReminderTime: DEFAULT_REMINDER_TIME },
+  settings: { defaultReminderTime: DEFAULT_REMINDER_TIME, theme: 'system' },
   // Son geri alınabilir işlem: { id, label, snapshot: { [collection]: [{ id, prev }] } }
   // prev null ise kayıt o işlemde oluşturulmuştur (geri almada silinir).
   lastUndo: null,
@@ -255,6 +258,9 @@ export const useTodoStore = create((set, get) => {
     async updateSettings(changes) {
       if ('defaultReminderTime' in changes && !isValidTime(changes.defaultReminderTime)) {
         throw new Error(strings.errors.invalidTime);
+      }
+      if ('theme' in changes && !THEME_MODES.includes(changes.theme)) {
+        throw new Error(strings.errors.invalidTheme);
       }
       const settings = { ...get().settings, ...changes };
       set({ settings });

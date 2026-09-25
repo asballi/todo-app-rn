@@ -7,7 +7,7 @@ import ColorPicker from '../src/components/ColorPicker';
 import IconPicker from '../src/components/IconPicker';
 import { confirm, showError } from '../src/components/confirm';
 import { goBack } from '../src/components/navigation';
-import { categoryColors, useThemedStyles, useTheme } from '../src/theme';
+import { categoryColors, onColor, useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
 const t = strings.category;
@@ -70,7 +70,7 @@ export default function CategoryFormScreen() {
 
       <View style={styles.preview}>
         <View style={[styles.previewIcon, { backgroundColor: color }]}>
-          <Feather name={icon} size={20} color={colors.onPrimary} />
+          <Feather name={icon} size={20} color={onColor(color)} />
         </View>
         <TextInput
           style={styles.nameInput}

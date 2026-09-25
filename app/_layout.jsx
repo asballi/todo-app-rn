@@ -6,12 +6,22 @@ import { useTodoStore } from '../src/store/useTodoStore';
 import { useReminders } from '../src/notifications/useReminders';
 import ReminderBanner from '../src/components/ReminderBanner';
 import UndoBar from '../src/components/UndoBar';
-import { useThemedStyles, useTheme } from '../src/theme';
+import { ThemeProvider, useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
+// Tema, Ayarlar'daki seçime göre (Sistem / Açık / Koyu) tüm uygulamaya verilir.
 export default function RootLayout() {
+  const mode = useTodoStore(s => s.settings.theme ?? 'system');
+  return (
+    <ThemeProvider mode={mode}>
+      <Root />
+    </ThemeProvider>
+  );
+}
+
+function Root() {
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
   const status = useTodoStore(s => s.status);
   const error = useTodoStore(s => s.error);
 
@@ -23,6 +33,7 @@ export default function RootLayout() {
   if (status !== 'ready') {
     return (
       <View style={styles.center}>
+        <StatusBar style={dark ? 'light' : 'dark'} />
         {status === 'error' ? (
           <Text style={styles.error}>{strings.common.loadFailed(error)}</Text>
         ) : (
@@ -36,7 +47,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style={dark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="category-form" options={modal} />
@@ -64,6 +75,7 @@ const modalOptions = colors => ({
   headerShown: true,
   headerStyle: { backgroundColor: colors.background },
   headerShadowVisible: false,
+  headerTintColor: colors.primary,
   headerTitleStyle: { fontWeight: '700', color: colors.text },
   contentStyle: { backgroundColor: colors.background },
 });

@@ -2,15 +2,17 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import DateInput from '../src/components/DateInput';
+import Chip from '../src/components/Chip';
 import { confirm, showError } from '../src/components/confirm';
 import { saveBackupFile, pickBackupFile } from '../src/data/backupFile';
 import { backupFileName } from '../src/data/backup';
-import { useTodoStore } from '../src/store/useTodoStore';
+import { useTodoStore, THEME_MODES } from '../src/store/useTodoStore';
 import { useNotificationPermission } from '../src/notifications/useReminders';
 import { strings } from '../src/strings';
 import { useThemedStyles } from '../src/theme';
 
 const t = strings.settings;
+const THEME_ICONS = { system: 'smartphone', light: 'sun', dark: 'moon' };
 
 async function exportBackup() {
   try {
@@ -46,11 +48,28 @@ async function importBackup() {
 export default function SettingsScreen() {
   const styles = useThemedStyles(makeStyles);
   const defaultReminderTime = useTodoStore(s => s.settings.defaultReminderTime);
+  const theme = useTodoStore(s => s.settings.theme ?? 'system');
   const [permission, requestPermission] = useNotificationPermission();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t.title }} />
+
+      <Text style={styles.label}>{t.theme}</Text>
+      <View style={styles.card}>
+        <View style={styles.buttons} accessibilityRole="radiogroup" accessibilityLabel={t.theme}>
+          {THEME_MODES.map(mode => (
+            <Chip
+              key={mode}
+              label={t.themeModes[mode]}
+              icon={THEME_ICONS[mode]}
+              selected={theme === mode}
+              onPress={() => useTodoStore.getState().updateSettings({ theme: mode }).catch(showError)}
+            />
+          ))}
+        </View>
+        <Text style={styles.help}>{t.themeHelp}</Text>
+      </View>
 
       <Text style={styles.label}>{t.defaultReminderTime}</Text>
       <View style={styles.card}>

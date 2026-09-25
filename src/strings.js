@@ -267,6 +267,9 @@ export const strings = {
       unsupported: 'Bu tarayıcı bildirimleri desteklemiyor.',
     },
     requestPermission: 'Bildirimlere izin ver',
+    theme: 'Tema',
+    themeModes: { system: 'Sistem', light: 'Açık', dark: 'Koyu' },
+    themeHelp: 'Sistem, cihazın ya da tarayıcının açık/koyu tercihini izler.',
   },
 
   // Kayıtlara yazılan varsayılan değerler.
@@ -285,6 +288,7 @@ export const strings = {
     },
     invalidDate: 'Geçersiz tarih',
     invalidTime: 'Geçersiz saat',
+    invalidTheme: 'Geçersiz tema',
     invalidPriority: 'Geçersiz öncelik',
     invalidChecklist: 'Geçersiz kontrol listesi',
     invalidRecurrenceUnit: 'Geçersiz tekrar birimi',

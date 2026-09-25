@@ -160,7 +160,7 @@ describe('ayarlar', () => {
   test('varsayılan hatırlatma saati 09:00, değişiklik kaydedilir ve yeniden yüklenir', async () => {
     expect(store().settings.defaultReminderTime).toBe('09:00');
     await store().updateSettings({ defaultReminderTime: '08:15' });
-    expect(await readJson(KEYS.settings)).toEqual({ defaultReminderTime: '08:15' });
+    expect(await readJson(KEYS.settings)).toEqual({ defaultReminderTime: '08:15', theme: 'system' });
 
     useTodoStore.setState(initialState);
     await store().init();
@@ -170,6 +170,21 @@ describe('ayarlar', () => {
   test('geçersiz saat reddedilir', async () => {
     await expect(store().updateSettings({ defaultReminderTime: '25:00' })).rejects.toThrow('Geçersiz saat');
     expect(store().settings.defaultReminderTime).toBe('09:00');
+  });
+
+  test('tema seçimi kaydedilir, geçersiz tema reddedilir', async () => {
+    expect(store().settings.theme).toBe('system');
+    await store().updateSettings({ theme: 'dark' });
+    expect((await readJson(KEYS.settings)).theme).toBe('dark');
+    await expect(store().updateSettings({ theme: 'mavi' })).rejects.toThrow('Geçersiz tema');
+    expect(store().settings.theme).toBe('dark');
+  });
+
+  test('eski ayarlarda tema yoksa sistem varsayılır', async () => {
+    await AsyncStorage.setItem(KEYS.settings, JSON.stringify({ defaultReminderTime: '08:15' }));
+    useTodoStore.setState(initialState);
+    await store().init();
+    expect(store().settings).toEqual({ defaultReminderTime: '08:15', theme: 'system' });
   });
 });
 

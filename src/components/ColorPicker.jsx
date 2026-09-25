@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { categoryColors, useThemedStyles, useTheme } from '../theme';
+import { categoryColors, onColor, useThemedStyles, useTheme } from '../theme';
 import { strings } from '../strings';
 
 // allowNone: "renksiz" seçeneği ekler (value = null).
@@ -18,7 +18,7 @@ export default function ColorPicker({ value, onChange, palette = categoryColors,
           onPress={() => onChange(null)}
           style={[styles.swatch, styles.none, value == null && styles.noneSelected]}
         >
-          <Feather name="slash" size={16} color={value == null ? colors.onPrimary : colors.muted} />
+          <Feather name="slash" size={16} color={value == null ? onColor(colors.tagDefault) : colors.muted} />
         </TouchableOpacity>
       )}
       {palette.map(color => (
@@ -30,7 +30,7 @@ export default function ColorPicker({ value, onChange, palette = categoryColors,
           onPress={() => onChange(color)}
           style={[styles.swatch, { backgroundColor: color }]}
         >
-          {value === color && <Feather name="check" size={16} color={colors.onPrimary} />}
+          {value === color && <Feather name="check" size={16} color={onColor(color)} />}
         </TouchableOpacity>
       ))}
     </View>

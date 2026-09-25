@@ -5,7 +5,7 @@ import { strings } from '../strings';
 // Web: tarayıcının kendi <input type="date|time"> alanı. Değer biçimleri
 // uygulamanınkiyle aynıdır ("YYYY-MM-DD", "HH:mm").
 export default function DateInput({ mode, value, onChange }) {
-  const { colors } = useTheme();
+  const { dark, colors } = useTheme();
   return (
     <input
       type={mode}
@@ -20,6 +20,8 @@ export default function DateInput({ mode, value, onChange }) {
         borderRadius: 8,
         border: `1px solid ${colors.border}`,
         background: colors.surface,
+        // Takvim/saat açılır penceresi de temaya uysun.
+        colorScheme: dark ? 'dark' : 'light',
       }}
     />
   );

@@ -18,6 +18,7 @@ export default function ListsLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
+        headerTintColor: colors.primary,
         headerTitleStyle: { fontWeight: '700', color: colors.text },
         contentStyle: { backgroundColor: colors.background },
       }}

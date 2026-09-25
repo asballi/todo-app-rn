@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { categoryIcons, useThemedStyles, useTheme } from '../theme';
+import { categoryIcons, onColor, useThemedStyles, useTheme } from '../theme';
 import { strings } from '../strings';
 
 export default function IconPicker({ value, onChange, color: colorProp }) {
@@ -22,7 +22,7 @@ export default function IconPicker({ value, onChange, color: colorProp }) {
             onPress={() => onChange(icon)}
             style={[styles.cell, selected && { backgroundColor: color, borderColor: color }]}
           >
-            <Feather name={icon} size={18} color={selected ? colors.onPrimary : colors.text} />
+            <Feather name={icon} size={18} color={selected ? onColor(color) : colors.text} />
           </TouchableOpacity>
         );
       })}

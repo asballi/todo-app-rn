@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useThemedStyles, useTheme } from '../theme';
+import { onColor, useThemedStyles, useTheme } from '../theme';
 
 // `selected` verilirse seçim çipidir (tekli seçimde radio, `multiple` ile
 // checkbox), verilmezse eylem butonudur.
@@ -10,6 +10,8 @@ export default function Chip({ label, icon, selected, multiple, color: colorProp
   const { colors } = useTheme();
   // Varsayılan renk temadan gelir (parametre varsayılanı gövdedeki değişkeni göremez).
   const color = colorProp ?? colors.primary;
+  // Seçili çipin zemini kullanıcı rengi olabilir; üstündeki yazı okunaklı kalsın.
+  const onSelected = colorProp ? onColor(colorProp) : colors.onPrimary;
   const selectable = selected !== undefined;
   const role = selectable ? (multiple ? 'checkbox' : 'radio') : 'button';
   return (
@@ -20,8 +22,8 @@ export default function Chip({ label, icon, selected, multiple, color: colorProp
       aria-checked={selectable ? !!selected : undefined}
       style={[styles.chip, selected && { backgroundColor: color, borderColor: color }]}
     >
-      {icon && <Feather name={icon} size={14} color={selected ? colors.onPrimary : color} />}
-      <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
+      {icon && <Feather name={icon} size={14} color={selected ? onSelected : color} />}
+      <Text style={[styles.label, selected && styles.labelSelected, selected && { color: onSelected }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -43,7 +45,6 @@ const makeStyles = colors => StyleSheet.create({
     color: colors.text,
   },
   labelSelected: {
-    color: colors.onPrimary,
     fontWeight: '600',
   },
 });
