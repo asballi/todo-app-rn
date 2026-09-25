@@ -9,10 +9,12 @@ import TaskRows from '../../src/components/TaskRows';
 import SectionTitle from '../../src/components/SectionTitle';
 import CompletedSection from '../../src/components/CompletedSection';
 import EmptyState from '../../src/components/EmptyState';
-import { colors } from '../../src/theme';
+import { useThemedStyles, useTheme } from '../../src/theme';
 import { strings } from '../../src/strings';
 
 export default function TodayScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const now = useNow();
   const tasks = useTodoStore(s => s.tasks);
   const view = useMemo(() => todayView(tasks, now), [tasks, now]);
@@ -44,13 +46,13 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },
   none: {
     fontSize: 13,
-    color: '#bbb',
+    color: colors.placeholder,
     paddingHorizontal: 4,
   },
   date: {

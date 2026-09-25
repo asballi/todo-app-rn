@@ -10,7 +10,7 @@ import RecurrencePicker from './RecurrencePicker';
 import ReminderPicker from './ReminderPicker';
 import { strings } from '../strings';
 import { quickDueDates } from '../domain/dates';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 import { showError } from './confirm';
 
 const DEFAULT_TIME = '09:00';
@@ -25,6 +25,8 @@ const f = strings.taskForm;
 // `children` formun altına eklenir; fonksiyonsa { flush } alır (bekleyen
 // kaydı hemen yapmak için, ör. tamamla/sil butonlarından önce).
 export default function TaskForm({ initial, submitLabel, onSubmit, autoSave, autoFocus, children }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [title, setTitle] = useState(initial.title);
   const [notes, setNotes] = useState(initial.notes);
   const [categoryId, setCategoryId] = useState(initial.categoryId);
@@ -133,7 +135,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoSave, aut
           value={title}
           onChangeText={typed(setTitle)}
           placeholder={f.titlePlaceholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           autoFocus={autoFocus}
           accessibilityLabel={f.titlePlaceholder}
         />
@@ -142,7 +144,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoSave, aut
           value={notes}
           onChangeText={typed(setNotes)}
           placeholder={f.notesPlaceholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           multiline
           accessibilityLabel={f.notesLabel}
         />
@@ -217,7 +219,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoSave, aut
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   status: {
     alignSelf: 'flex-end',
     fontSize: 12,
@@ -277,7 +279,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   submitText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

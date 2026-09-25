@@ -6,10 +6,12 @@ import TaskForm from '../../src/components/TaskForm';
 import { showError } from '../../src/components/confirm';
 import { goBack } from '../../src/components/navigation';
 import { useTodoStore, isAlive } from '../../src/store/useTodoStore';
-import { colors } from '../../src/theme';
+import { useThemedStyles, useTheme } from '../../src/theme';
 import { strings } from '../../src/strings';
 
 export default function TaskDetailScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
@@ -75,7 +77,7 @@ export default function TaskDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   action: {
     flexDirection: 'row',
     alignItems: 'center',

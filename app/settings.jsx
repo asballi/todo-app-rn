@@ -8,7 +8,7 @@ import { backupFileName } from '../src/data/backup';
 import { useTodoStore } from '../src/store/useTodoStore';
 import { useNotificationPermission } from '../src/notifications/useReminders';
 import { strings } from '../src/strings';
-import { colors } from '../src/theme';
+import { useThemedStyles } from '../src/theme';
 
 const t = strings.settings;
 
@@ -44,6 +44,7 @@ async function importBackup() {
 }
 
 export default function SettingsScreen() {
+  const styles = useThemedStyles(makeStyles);
   const defaultReminderTime = useTodoStore(s => s.settings.defaultReminderTime);
   const [permission, requestPermission] = useNotificationPermission();
 
@@ -88,7 +89,7 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 20,
     gap: 10,
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '700',
   },
 });

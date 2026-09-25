@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTodoStore } from '../store/useTodoStore';
 import { showError } from './confirm';
 import { strings } from '../strings';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 
 const VISIBLE_MS = 5000;
 // Sekme çubuğunun üstünde kalsın.
@@ -13,6 +13,8 @@ const TAB_BAR_OFFSET = 64;
 
 // Son işlemi geri alma şeridi: 5 saniye görünür, yeni işlem öncekinin yerini alır.
 export default function UndoBar() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const lastUndo = useTodoStore(s => s.lastUndo);
   const insets = useSafeAreaInsets();
 
@@ -40,14 +42,14 @@ export default function UndoBar() {
           accessibilityLabel={strings.undo.dismiss}
           hitSlop={8}
         >
-          <Feather name="x" size={16} color="#fff" />
+          <Feather name="x" size={16} color={colors.inverseText} />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     position: 'absolute',
     left: 12,
@@ -61,11 +63,11 @@ const styles = StyleSheet.create({
     gap: 14,
     maxWidth: 480,
     width: '100%',
-    backgroundColor: colors.text,
+    backgroundColor: colors.inverseSurface,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
@@ -73,11 +75,11 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    color: '#fff',
+    color: colors.inverseText,
     fontSize: 14,
   },
   action: {
-    color: '#b8b3ff',
+    color: colors.inversePrimary,
     fontSize: 14,
     fontWeight: '700',
   },

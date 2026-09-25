@@ -12,7 +12,7 @@ import {
   normalizeRecurrence,
 } from '../domain/recurrence';
 import { strings } from '../strings';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 
 const t = strings.recurrence;
 const EMPTY_CUSTOM = { unit: 'day', interval: 1, weekdays: null, from: 'due', monthDay: null };
@@ -20,6 +20,8 @@ const EMPTY_CUSTOM = { unit: 'day', interval: 1, weekdays: null, from: 'due', mo
 // Tekrar seçici: hazır seçenekler, "Özel" ile her N gün/hafta/ay/yıl ve
 // haftalıkta gün seçimi; sayma başlangıcı (bitiş / tamamlanma).
 export default function RecurrencePicker({ value, dueDate, onChange }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const current = presetKey(value);
   const [customOpen, setCustomOpen] = useState(current === 'custom');
   const showCustom = customOpen || current === 'custom';
@@ -136,7 +138,7 @@ export default function RecurrencePicker({ value, dueDate, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     gap: 8,
   },

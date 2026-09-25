@@ -1,10 +1,14 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors, categoryIcons } from '../theme';
+import { categoryIcons, useThemedStyles, useTheme } from '../theme';
 import { strings } from '../strings';
 
-export default function IconPicker({ value, onChange, color = colors.primary }) {
+export default function IconPicker({ value, onChange, color: colorProp }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  // Varsayılan renk temadan gelir (parametre varsayılanı gövdedeki değişkeni göremez).
+  const color = colorProp ?? colors.primary;
   return (
     <View style={styles.row}>
       {categoryIcons.map(icon => {
@@ -18,7 +22,7 @@ export default function IconPicker({ value, onChange, color = colors.primary }) 
             onPress={() => onChange(icon)}
             style={[styles.cell, selected && { backgroundColor: color, borderColor: color }]}
           >
-            <Feather name={icon} size={18} color={selected ? '#fff' : colors.text} />
+            <Feather name={icon} size={18} color={selected ? colors.onPrimary : colors.text} />
           </TouchableOpacity>
         );
       })}
@@ -26,7 +30,7 @@ export default function IconPicker({ value, onChange, color = colors.primary }) 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',

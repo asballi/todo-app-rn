@@ -1,18 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../theme';
+import { useTheme, useThemedStyles } from '../theme';
 
-export default function EmptyState({ icon, color = colors.primary, text }) {
+export default function EmptyState({ icon, color, text }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.container}>
-      <Feather name={icon} size={32} color={color} />
+      <Feather name={icon} size={32} color={color ?? colors.primary} />
       <Text style={styles.text}>{text}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     alignItems: 'center',
     gap: 8,

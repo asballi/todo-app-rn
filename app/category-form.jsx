@@ -7,13 +7,15 @@ import ColorPicker from '../src/components/ColorPicker';
 import IconPicker from '../src/components/IconPicker';
 import { confirm, showError } from '../src/components/confirm';
 import { goBack } from '../src/components/navigation';
-import { colors, categoryColors } from '../src/theme';
+import { categoryColors, useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
 const t = strings.category;
 
 // Yeni kategori (?id yok) veya mevcut kategoriyi düzenleme (?id=...).
 export default function CategoryFormScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   // Açılıştaki hali kullanılır; silme sonrası store güncellenince form
@@ -68,7 +70,7 @@ export default function CategoryFormScreen() {
 
       <View style={styles.preview}>
         <View style={[styles.previewIcon, { backgroundColor: color }]}>
-          <Feather name={icon} size={20} color="#fff" />
+          <Feather name={icon} size={20} color={colors.onPrimary} />
         </View>
         <TextInput
           style={styles.nameInput}
@@ -76,7 +78,7 @@ export default function CategoryFormScreen() {
           onChangeText={setName}
           onSubmitEditing={save}
           placeholder={t.namePlaceholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           autoFocus={!isEdit}
           returnKeyType="done"
         />
@@ -106,7 +108,7 @@ export default function CategoryFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 20,
     gap: 12,
@@ -152,7 +154,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   saveText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

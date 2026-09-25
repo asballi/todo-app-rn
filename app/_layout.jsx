@@ -6,10 +6,12 @@ import { useTodoStore } from '../src/store/useTodoStore';
 import { useReminders } from '../src/notifications/useReminders';
 import ReminderBanner from '../src/components/ReminderBanner';
 import UndoBar from '../src/components/UndoBar';
-import { colors } from '../src/theme';
+import { useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
 export default function RootLayout() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const status = useTodoStore(s => s.status);
   const error = useTodoStore(s => s.error);
 
@@ -30,17 +32,19 @@ export default function RootLayout() {
     );
   }
 
+  const modal = modalOptions(colors);
+
   return (
     <>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="category-form" options={modalOptions} />
-        <Stack.Screen name="task/new" options={modalOptions} />
-        <Stack.Screen name="task/[id]" options={modalOptions} />
-        <Stack.Screen name="tag-form" options={modalOptions} />
-        <Stack.Screen name="manage-tags" options={modalOptions} />
-        <Stack.Screen name="settings" options={modalOptions} />
+        <Stack.Screen name="category-form" options={modal} />
+        <Stack.Screen name="task/new" options={modal} />
+        <Stack.Screen name="task/[id]" options={modal} />
+        <Stack.Screen name="tag-form" options={modal} />
+        <Stack.Screen name="manage-tags" options={modal} />
+        <Stack.Screen name="settings" options={modal} />
       </Stack>
       <ReminderManager />
       <ReminderBanner />
@@ -55,16 +59,16 @@ function ReminderManager() {
   return null;
 }
 
-const modalOptions = {
+const modalOptions = colors => ({
   presentation: 'modal',
   headerShown: true,
   headerStyle: { backgroundColor: colors.background },
   headerShadowVisible: false,
   headerTitleStyle: { fontWeight: '700', color: colors.text },
   contentStyle: { backgroundColor: colors.background },
-};
+});
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   center: {
     flex: 1,
     alignItems: 'center',
@@ -73,7 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   error: {
-    color: '#e05c5c',
+    color: colors.danger,
     textAlign: 'center',
   },
 });

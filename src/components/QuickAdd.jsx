@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { colors, priorityColors } from '../theme';
+import { priorityColors, useThemedStyles, useTheme } from '../theme';
 import { useTodoStore } from '../store/useTodoStore';
 import { parseQuickAdd } from '../domain/quickParse';
 import { formatDueLabel, toDateKey } from '../domain/dates';
@@ -16,6 +16,8 @@ const t = strings.quickAdd;
 // (ör. kategori ekranında o kategori) üzerine yazılır. Yazarken altta
 // önizleme çipleri görünür. Ayrıntı butonu aynı değerlerle tam formu açar.
 export default function QuickAdd({ defaults = {}, placeholder = t.placeholder }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const [text, setText] = useState('');
   const categories = useTodoStore(s => s.categories);
@@ -83,7 +85,7 @@ export default function QuickAdd({ defaults = {}, placeholder = t.placeholder })
           onChangeText={setText}
           onSubmitEditing={submit}
           placeholder={placeholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           returnKeyType="done"
           blurOnSubmit={false}
           accessibilityLabel={placeholder}
@@ -92,7 +94,7 @@ export default function QuickAdd({ defaults = {}, placeholder = t.placeholder })
           <Feather name="sliders" size={18} color={colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={submit} accessibilityLabel={t.add}>
-          <Feather name="plus" size={22} color="#fff" />
+          <Feather name="plus" size={22} color={colors.onPrimary} />
         </TouchableOpacity>
       </View>
       {preview.length > 0 && (
@@ -131,7 +133,7 @@ function previewChips(parsed) {
   return chips;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     marginBottom: 12,
     gap: 6,

@@ -14,13 +14,15 @@ import TaskRows from '../../src/components/TaskRows';
 import CompletedSection from '../../src/components/CompletedSection';
 import EmptyState from '../../src/components/EmptyState';
 import { PRIORITY_LABELS } from '../../src/components/PriorityPicker';
-import { colors, priorityColors } from '../../src/theme';
+import { priorityColors, useThemedStyles, useTheme } from '../../src/theme';
 import { strings } from '../../src/strings';
 
 const s = strings.search;
 const toggle = (list, value) => (list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
 
 export default function SearchScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const tasks = useTodoStore(s => s.tasks);
   const taskTags = useTodoStore(s => s.taskTags);
   const allCategories = useTodoStore(s => s.categories);
@@ -63,7 +65,7 @@ export default function SearchScreen() {
           value={query}
           onChangeText={setQuery}
           placeholder={s.placeholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           returnKeyType="search"
           accessibilityLabel={s.placeholder}
         />
@@ -171,7 +173,7 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   none: {
-    color: '#bbb',
+    color: colors.placeholder,
     fontSize: 13,
   },
   count: {

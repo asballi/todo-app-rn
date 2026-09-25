@@ -3,13 +3,15 @@ import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { createChecklistItem } from '../domain/models';
 import { strings } from '../strings';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 
 const t = strings.checklist;
 
 // Görev formundaki kontrol listesi: işaretle, metni düzenle, sil, Enter ile ekle.
 // Boş bırakılan maddeler kaydederken atılır.
 export default function ChecklistEditor({ value, onChange }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [draft, setDraft] = useState('');
 
   // onChange ikinci argümanı: { typing: true } metin düzenlemesidir (gecikmeli kayıt için).
@@ -34,7 +36,7 @@ export default function ChecklistEditor({ value, onChange }) {
             hitSlop={8}
           >
             <View style={[styles.box, item.done && styles.boxDone]}>
-              {item.done && <Feather name="check" size={12} color="#fff" />}
+              {item.done && <Feather name="check" size={12} color={colors.onPrimary} />}
             </View>
           </TouchableOpacity>
           <TextInput
@@ -60,7 +62,7 @@ export default function ChecklistEditor({ value, onChange }) {
           onChangeText={setDraft}
           onSubmitEditing={add}
           placeholder={t.addPlaceholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           returnKeyType="done"
           blurOnSubmit={false}
           accessibilityLabel={t.addPlaceholder}
@@ -70,7 +72,7 @@ export default function ChecklistEditor({ value, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,

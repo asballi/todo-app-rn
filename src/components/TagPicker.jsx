@@ -5,7 +5,7 @@ import { showError } from './confirm';
 import { useTodoStore, isAlive } from '../store/useTodoStore';
 import { suggestTags } from '../domain/filters';
 import { tagKey } from '../domain/tags';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 import { strings } from '../strings';
 
 const MAX_SUGGESTIONS = 8;
@@ -13,6 +13,8 @@ const MAX_SUGGESTIONS = 8;
 // Seçili etiketler işaretli çip olarak görünür; yazdıkça eşleşen etiketler
 // önerilir. Eşleşme yoksa yazılan adla yeni etiket oluşturulur.
 export default function TagPicker({ value, onChange }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const allTags = useTodoStore(s => s.tags);
   const [query, setQuery] = useState('');
 
@@ -50,7 +52,7 @@ export default function TagPicker({ value, onChange }) {
         onChangeText={setQuery}
         onSubmitEditing={submit}
         placeholder={strings.tag.pickerPlaceholder}
-        placeholderTextColor="#bbb"
+        placeholderTextColor={colors.placeholder}
         returnKeyType="done"
         blurOnSubmit={false}
         accessibilityLabel={strings.tag.pickerPlaceholder}
@@ -86,7 +88,7 @@ export default function TagPicker({ value, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     gap: 8,
   },

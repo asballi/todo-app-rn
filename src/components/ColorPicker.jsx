@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { categoryColors, colors as theme } from '../theme';
+import { categoryColors, useThemedStyles, useTheme } from '../theme';
 import { strings } from '../strings';
 
 // allowNone: "renksiz" seçeneği ekler (value = null).
-export default function ColorPicker({ value, onChange, colors = categoryColors, allowNone = false }) {
+export default function ColorPicker({ value, onChange, palette = categoryColors, allowNone = false }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.row}>
       {allowNone && (
@@ -16,10 +18,10 @@ export default function ColorPicker({ value, onChange, colors = categoryColors, 
           onPress={() => onChange(null)}
           style={[styles.swatch, styles.none, value == null && styles.noneSelected]}
         >
-          <Feather name="slash" size={16} color={value == null ? '#fff' : theme.muted} />
+          <Feather name="slash" size={16} color={value == null ? colors.onPrimary : colors.muted} />
         </TouchableOpacity>
       )}
-      {colors.map(color => (
+      {palette.map(color => (
         <TouchableOpacity
           key={color}
           accessibilityRole="radio"
@@ -28,14 +30,14 @@ export default function ColorPicker({ value, onChange, colors = categoryColors, 
           onPress={() => onChange(color)}
           style={[styles.swatch, { backgroundColor: color }]}
         >
-          {value === color && <Feather name="check" size={16} color="#fff" />}
+          {value === color && <Feather name="check" size={16} color={colors.onPrimary} />}
         </TouchableOpacity>
       ))}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -43,12 +45,12 @@ const styles = StyleSheet.create({
   },
   none: {
     borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   noneSelected: {
-    backgroundColor: theme.tagDefault,
-    borderColor: theme.tagDefault,
+    backgroundColor: colors.tagDefault,
+    borderColor: colors.tagDefault,
   },
   swatch: {
     width: 34,

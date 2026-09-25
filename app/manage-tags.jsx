@@ -3,12 +3,15 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useTodoStore } from '../src/store/useTodoStore';
 import { sortTags, openTaskCountsByTag } from '../src/domain/filters';
-import { ListRow, SectionHeader, listStyles } from '../src/components/ListRow';
-import { colors } from '../src/theme';
+import { ListRow, SectionHeader, useListStyles } from '../src/components/ListRow';
+import { useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
 // Etiketleri yeniden adlandırma, renklendirme ve silme için.
 export default function ManageTagsScreen() {
+  const listStyles = useListStyles();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const allTags = useTodoStore(s => s.tags);
   const tasks = useTodoStore(s => s.tasks);
@@ -45,7 +48,7 @@ export default function ManageTagsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },

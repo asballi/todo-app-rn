@@ -5,13 +5,15 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReminderBanner } from '../notifications/bannerStore';
 import { strings } from '../strings';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 
 const t = strings.reminders;
 
 // Uygulama içi hatırlatıcı şeritleri: dokununca görev açılır. Kendiliğinden
 // kapanmaz; kullanıcı bakmıyorken hatırlatıcı kaybolmasın.
 export default function ReminderBanner() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const items = useReminderBanner(s => s.items);
   const dismiss = useReminderBanner(s => s.dismiss);
   const insets = useSafeAreaInsets();
@@ -30,14 +32,14 @@ export default function ReminderBanner() {
             }}
             accessibilityLabel={t.bannerOpen(item.title)}
           >
-            <Feather name="bell" size={18} color="#fff" />
+            <Feather name="bell" size={18} color={colors.onPrimary} />
             <View style={styles.texts}>
               <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
               <Text style={styles.subtitle}>{item.body}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => dismiss(item.key)} accessibilityLabel={t.bannerDismiss} hitSlop={8}>
-            <Feather name="x" size={18} color="#fff" />
+            <Feather name="x" size={18} color={colors.onPrimary} />
           </TouchableOpacity>
         </View>
       ))}
@@ -45,7 +47,7 @@ export default function ReminderBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     position: 'absolute',
     left: 12,
@@ -61,7 +63,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
@@ -77,12 +79,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   subtitle: {
-    color: '#fff',
+    color: colors.onPrimary,
     opacity: 0.85,
     fontSize: 13,
   },

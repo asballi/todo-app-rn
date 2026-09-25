@@ -6,13 +6,15 @@ import { useTodoStore, liveRecords, isAlive } from '../src/store/useTodoStore';
 import ColorPicker from '../src/components/ColorPicker';
 import { confirm, showError } from '../src/components/confirm';
 import { goBack } from '../src/components/navigation';
-import { colors } from '../src/theme';
+import { useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
 const t = strings.tag;
 
 // Yeni etiket (?id yok) veya mevcut etiketi düzenleme (?id=...).
 export default function TagFormScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
@@ -72,7 +74,7 @@ export default function TagFormScreen() {
           onChangeText={setName}
           onSubmitEditing={save}
           placeholder={t.namePlaceholder}
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.placeholder}
           autoFocus={!isEdit}
           returnKeyType="done"
         />
@@ -99,7 +101,7 @@ export default function TagFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 20,
     gap: 12,
@@ -142,7 +144,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   saveText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

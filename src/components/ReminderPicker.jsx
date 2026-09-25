@@ -5,13 +5,14 @@ import { useTodoStore } from '../store/useTodoStore';
 import { useNotificationPermission } from '../notifications/useReminders';
 import { REMINDER_OPTIONS, MAX_REMINDERS } from '../domain/reminders';
 import { strings } from '../strings';
-import { colors } from '../theme';
+import { useThemedStyles } from '../theme';
 
 const t = strings.reminders;
 
 // Bitiş anına göre hatırlatıcılar (en fazla 3). İlk hatırlatıcı eklenirken
 // bildirim izni istenir; reddedilirse uyarı gösterilir, seçim yine kaydedilir.
 export default function ReminderPicker({ value, dueTime, onChange }) {
+  const styles = useThemedStyles(makeStyles);
   const defaultTime = useTodoStore(s => s.settings.defaultReminderTime);
   const [permission, requestPermission] = useNotificationPermission();
 
@@ -52,7 +53,7 @@ export default function ReminderPicker({ value, dueTime, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     gap: 8,
   },

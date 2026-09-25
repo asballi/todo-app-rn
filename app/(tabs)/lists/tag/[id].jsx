@@ -8,10 +8,12 @@ import QuickAdd from '../../../../src/components/QuickAdd';
 import TaskRows from '../../../../src/components/TaskRows';
 import CompletedSection from '../../../../src/components/CompletedSection';
 import EmptyState from '../../../../src/components/EmptyState';
-import { colors } from '../../../../src/theme';
+import { useThemedStyles, useTheme } from '../../../../src/theme';
 import { strings } from '../../../../src/strings';
 
 export default function TagScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const tag = useTodoStore(s => s.tags.find(t => t.id === id));
@@ -52,7 +54,7 @@ export default function TagScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },

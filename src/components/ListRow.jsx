@@ -1,14 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 
 // Listeler ve etiket yönetimi ekranlarındaki satırlar: renkli simge, ad, sayı.
 export function ListRow({ icon, color, name, count, first, onPress }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <TouchableOpacity style={[styles.row, !first && styles.rowBorder]} onPress={onPress}>
       <View style={[styles.icon, { backgroundColor: color }]}>
-        <Feather name={icon} size={16} color="#fff" />
+        <Feather name={icon} size={16} color={colors.onPrimary} />
       </View>
       <Text style={styles.name} numberOfLines={1}>{name}</Text>
       {count > 0 && <Text style={styles.count}>{count}</Text>}
@@ -18,6 +20,8 @@ export function ListRow({ icon, color, name, count, first, onPress }) {
 }
 
 export function SectionHeader({ title, actionLabel, actionIcon = 'plus', onAction }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -31,7 +35,12 @@ export function SectionHeader({ title, actionLabel, actionIcon = 'plus', onActio
   );
 }
 
-export const listStyles = StyleSheet.create({
+// Listeler ve etiket yönetimi ekranlarında ortak kart/boş durum stilleri.
+export function useListStyles() {
+  return useThemedStyles(makeListStyles);
+}
+
+const makeListStyles = colors => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -46,7 +55,7 @@ export const listStyles = StyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

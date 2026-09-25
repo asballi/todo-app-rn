@@ -2,11 +2,12 @@ import React from 'react';
 import { Platform, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { parseDateKey, toDateKey, toTimeString } from '../domain/dates';
-import { colors } from '../theme';
+import { useThemedStyles } from '../theme';
 
 // Mobil tarih/saat seçici. value: "YYYY-MM-DD" (mode="date") veya "HH:mm"
 // (mode="time"). Web sürümü DateInput.web.jsx içindedir.
 export default function DateInput({ mode, value, onChange }) {
+  const styles = useThemedStyles(makeStyles);
   const date = mode === 'date' ? parseDateKey(value) : parseDateKey('2000-01-01', value);
 
   function handleChange(event, selected) {
@@ -36,7 +37,7 @@ export default function DateInput({ mode, value, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   button: {
     paddingHorizontal: 12,
     paddingVertical: 7,

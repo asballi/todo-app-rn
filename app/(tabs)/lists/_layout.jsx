@@ -3,7 +3,7 @@ import { Stack, router } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { strings } from '../../../src/strings';
-import { colors } from '../../../src/theme';
+import { useTheme } from '../../../src/theme';
 
 // Kategori/etiket sayfası doğrudan URL ile açılsa bile altında Listeler
 // ana ekranı olur: geri butonu ve sekmeye tekrar basınca başa dönme çalışır.
@@ -12,6 +12,7 @@ export const unstable_settings = {
 };
 
 export default function ListsLayout() {
+  const { colors } = useTheme();
   return (
     <Stack
       screenOptions={{

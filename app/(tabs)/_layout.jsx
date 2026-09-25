@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../../src/theme';
+import { useTheme } from '../../src/theme';
 import { strings } from '../../src/strings';
 
 const TABS = [
@@ -12,6 +12,7 @@ const TABS = [
 ];
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
   return (
     <Tabs
       screenOptions={{

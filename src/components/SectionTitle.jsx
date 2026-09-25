@@ -1,10 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 
 // Görev listelerindeki bölüm başlığı (ör. "Gecikmiş", "Yarın · 26 Eylül").
-export default function SectionTitle({ title, subtitle, count, color = colors.text, onAdd, addLabel }) {
+export default function SectionTitle({ title, subtitle, count, color: colorProp, onAdd, addLabel }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  // Varsayılan renk temadan gelir (parametre varsayılanı gövdedeki değişkeni göremez).
+  const color = colorProp ?? colors.text;
   return (
     <View style={styles.row}>
       <Text style={[styles.title, { color }]}>{title}</Text>
@@ -20,7 +24,7 @@ export default function SectionTitle({ title, subtitle, count, color = colors.te
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'baseline',

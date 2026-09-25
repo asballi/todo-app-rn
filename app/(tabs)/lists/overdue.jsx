@@ -5,10 +5,12 @@ import { useNow } from '../../../src/store/hooks';
 import { overdueTasks } from '../../../src/domain/filters';
 import TaskRows from '../../../src/components/TaskRows';
 import EmptyState from '../../../src/components/EmptyState';
-import { colors } from '../../../src/theme';
+import { useThemedStyles, useTheme } from '../../../src/theme';
 import { strings } from '../../../src/strings';
 
 export default function OverdueScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const now = useNow();
   const allTasks = useTodoStore(s => s.tasks);
   const tasks = useMemo(() => overdueTasks(allTasks, now), [allTasks, now]);
@@ -21,7 +23,7 @@ export default function OverdueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },

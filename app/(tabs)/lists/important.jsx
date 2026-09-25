@@ -4,11 +4,13 @@ import { useTodoStore } from '../../../src/store/useTodoStore';
 import { importantTasks } from '../../../src/domain/filters';
 import TaskRows from '../../../src/components/TaskRows';
 import EmptyState from '../../../src/components/EmptyState';
-import { colors } from '../../../src/theme';
+import { useThemedStyles, useTheme } from '../../../src/theme';
 import { strings } from '../../../src/strings';
 
 // Önemli: yüksek öncelikli, tamamlanmamış görevler.
 export default function ImportantScreen() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const allTasks = useTodoStore(s => s.tasks);
   const tasks = useMemo(() => importantTasks(allTasks), [allTasks]);
 
@@ -22,7 +24,7 @@ export default function ImportantScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },

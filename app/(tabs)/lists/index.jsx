@@ -11,13 +11,16 @@ import {
   overdueTasks,
   importantTasks,
 } from '../../../src/domain/filters';
-import { ListRow, SectionHeader, listStyles } from '../../../src/components/ListRow';
-import { colors } from '../../../src/theme';
+import { ListRow, SectionHeader, useListStyles } from '../../../src/components/ListRow';
+import { useThemedStyles, useTheme } from '../../../src/theme';
 import { strings } from '../../../src/strings';
 
 const l = strings.lists;
 
 export default function ListsScreen() {
+  const listStyles = useListStyles();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const allCategories = useTodoStore(s => s.categories);
   const allTags = useTodoStore(s => s.tags);
@@ -95,7 +98,7 @@ export default function ListsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   content: {
     padding: 16,
   },

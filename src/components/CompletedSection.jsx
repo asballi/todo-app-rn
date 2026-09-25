@@ -4,11 +4,13 @@ import { Feather } from '@expo/vector-icons';
 import TaskRows from './TaskRows';
 import { showError } from './confirm';
 import { useTodoStore } from '../store/useTodoStore';
-import { colors } from '../theme';
+import { useThemedStyles, useTheme } from '../theme';
 import { strings } from '../strings';
 
 // Listelerin altındaki "Tamamlananlar (n)" bölümü; varsayılan olarak kapalı.
 export default function CompletedSection({ tasks }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   if (tasks.length === 0) return null;
 
@@ -41,7 +43,7 @@ export default function CompletedSection({ tasks }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   container: {
     marginTop: 8,
   },

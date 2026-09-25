@@ -1,10 +1,11 @@
 import React from 'react';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { strings } from '../strings';
 
 // Web: tarayıcının kendi <input type="date|time"> alanı. Değer biçimleri
 // uygulamanınkiyle aynıdır ("YYYY-MM-DD", "HH:mm").
 export default function DateInput({ mode, value, onChange }) {
+  const { colors } = useTheme();
   return (
     <input
       type={mode}

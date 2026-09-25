@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Chip from './Chip';
-import { priorityColors } from '../theme';
+import { priorityColors, useThemedStyles } from '../theme';
 import { strings } from '../strings';
 
 export const PRIORITY_LABELS = strings.priority.labels;
 
 export default function PriorityPicker({ value, onChange }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.row}>
       {PRIORITY_LABELS.map((label, priority) => (
@@ -24,7 +25,7 @@ export default function PriorityPicker({ value, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = colors => StyleSheet.create({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
