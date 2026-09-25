@@ -1,0 +1,57 @@
+// Bitiş tarihleri yerel metin olarak tutulur: dueDate "YYYY-MM-DD", dueTime "HH:mm".
+// new Date("YYYY-MM-DD") kullanma: UTC gece yarısı olarak yorumlanır ve
+// UTC'nin gerisindeki saat dilimlerinde bir önceki güne kayar.
+
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+const pad = n => String(n).padStart(2, '0');
+
+export function toDateKey(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function isValidDateKey(key) {
+  const m = DATE_RE.exec(key ?? '');
+  if (!m) return false;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return toDateKey(d) === key;
+}
+
+export function isValidTime(time) {
+  return TIME_RE.test(time ?? '');
+}
+
+// Yerel saatle Date döndürür; saat verilmezse günün başı.
+export function parseDateKey(key, time = null) {
+  const [y, m, d] = key.split('-').map(Number);
+  const [hh, mm] = time ? time.split(':').map(Number) : [0, 0];
+  return new Date(y, m - 1, d, hh, mm);
+}
+
+export function addDays(key, days) {
+  const [y, m, d] = key.split('-').map(Number);
+  return toDateKey(new Date(y, m - 1, d + days));
+}
+
+// Görevin gecikmiş sayılmaya başladığı an. Saatsiz görev ertesi günün
+// başında, saatli görev o saatte gecikir. Tarihsiz görev için null.
+export function dueAt(task) {
+  if (!task.dueDate) return null;
+  if (task.dueTime) return parseDateKey(task.dueDate, task.dueTime);
+  return parseDateKey(addDays(task.dueDate, 1));
+}
+
+export function isOverdue(task, now = new Date()) {
+  if (task.completedAt || !task.dueDate) return false;
+  const deadline = dueAt(task);
+  return task.dueTime ? now > deadline : now >= deadline;
+}
+
+export function isDueOn(task, dateKey) {
+  return task.dueDate === dateKey;
+}
+
+export function isCompletedOn(task, dateKey) {
+  return !!task.completedAt && toDateKey(new Date(task.completedAt)) === dateKey;
+}

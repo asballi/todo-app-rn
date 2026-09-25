@@ -1,0 +1,189 @@
+import { create } from 'zustand';
+import { runMigrations } from '../data/migrations';
+import {
+  taskRepository,
+  categoryRepository,
+  tagRepository,
+  taskTagRepository,
+} from '../data/repositories';
+import { INBOX_ID } from '../domain/ids';
+import { tagKey } from '../domain/tags';
+import * as models from '../domain/models';
+
+const REPOSITORIES = {
+  tasks: taskRepository,
+  categories: categoryRepository,
+  tags: tagRepository,
+  taskTags: taskTagRepository,
+};
+
+// Store tüm kayıtları (soft delete edilmişler dahil) tutar; ekranlar
+// yalnızca canlı kayıtları göstermek için isAlive / liveRecords kullanır.
+export const isAlive = record => !record.deletedAt;
+export const liveRecords = list => list.filter(isAlive);
+
+function mergeById(list, records) {
+  const byId = new Map(list.map(r => [r.id, r]));
+  for (const record of records) byId.set(record.id, record);
+  return [...byId.values()];
+}
+
+export const initialState = {
+  status: 'idle', // idle | loading | ready | error
+  error: null,
+  tasks: [],
+  categories: [],
+  tags: [],
+  taskTags: [],
+};
+
+export const useTodoStore = create((set, get) => {
+  // Değişiklikleri önce belleğe (arayüz hemen güncellenir), sonra depoya yazar.
+  async function commit(changes) {
+    set(state => {
+      const next = {};
+      for (const [collection, records] of Object.entries(changes)) {
+        next[collection] = mergeById(state[collection], records);
+      }
+      return next;
+    });
+    try {
+      await Promise.all(
+        Object.entries(changes).map(([collection, records]) =>
+          REPOSITORIES[collection].upsertMany(records),
+        ),
+      );
+    } catch (e) {
+      console.warn('Kaydetme hatası', e);
+      set({ error: e.message });
+      throw e;
+    }
+  }
+
+  function findAlive(collection, id) {
+    const record = get()[collection].find(r => r.id === id && isAlive(r));
+    if (!record) throw new Error(`Kayıt bulunamadı: ${collection}/${id}`);
+    return record;
+  }
+
+  function linksToAdd(taskId, tagIds) {
+    return [...new Set(tagIds)].map(tagId => {
+      findAlive('tags', tagId);
+      return models.createTaskTag(taskId, tagId);
+    });
+  }
+
+  return {
+    ...initialState,
+
+    async init() {
+      if (get().status === 'loading' || get().status === 'ready') return;
+      set({ status: 'loading', error: null });
+      try {
+        await runMigrations();
+        const [tasks, categories, tags, taskTags] = await Promise.all([
+          taskRepository.list(),
+          categoryRepository.list(),
+          tagRepository.list(),
+          taskTagRepository.list(),
+        ]);
+        set({ status: 'ready', tasks, categories, tags, taskTags });
+      } catch (e) {
+        console.warn('Veriler yüklenemedi', e);
+        set({ status: 'error', error: e.message });
+      }
+    },
+
+    // --- Görevler ---
+
+    async addTask(input) {
+      const { tagIds = [], ...fields } = input;
+      findAlive('categories', fields.categoryId ?? INBOX_ID);
+      const task = models.createTask(fields);
+      await commit({ tasks: [task], taskTags: linksToAdd(task.id, tagIds) });
+      return task;
+    },
+
+    async updateTask(id, changes) {
+      if ('categoryId' in changes) findAlive('categories', changes.categoryId);
+      const task = models.updateTask(findAlive('tasks', id), changes);
+      await commit({ tasks: [task] });
+      return task;
+    },
+
+    async toggleTask(id) {
+      const task = models.toggleTask(findAlive('tasks', id));
+      await commit({ tasks: [task] });
+      return task;
+    },
+
+    async deleteTasks(ids) {
+      const tasks = ids.map(id => models.softDelete(findAlive('tasks', id)));
+      await commit({ tasks });
+    },
+
+    async setTaskTags(taskId, tagIds) {
+      findAlive('tasks', taskId);
+      const wanted = new Set(tagIds);
+      const current = get().taskTags.filter(l => l.taskId === taskId && isAlive(l));
+      const currentTagIds = new Set(current.map(l => l.tagId));
+      const removed = current.filter(l => !wanted.has(l.tagId)).map(l => models.softDelete(l));
+      const added = linksToAdd(taskId, tagIds.filter(id => !currentTagIds.has(id)));
+      await commit({ taskTags: [...removed, ...added] });
+    },
+
+    // --- Kategoriler ---
+
+    async addCategory(input) {
+      const orders = liveRecords(get().categories).map(c => c.sortOrder);
+      const category = models.createCategory(input, Math.max(0, ...orders) + 1);
+      await commit({ categories: [category] });
+      return category;
+    },
+
+    async updateCategory(id, changes) {
+      const category = models.updateCategory(findAlive('categories', id), changes);
+      await commit({ categories: [category] });
+      return category;
+    },
+
+    // Kategori silinince görevleri silinmez, Gelen Kutusu'na taşınır.
+    async deleteCategory(id) {
+      const category = findAlive('categories', id);
+      if (category.isSystem) throw new Error('Gelen Kutusu silinemez');
+      const tasks = liveRecords(get().tasks)
+        .filter(t => t.categoryId === id)
+        .map(t => models.updateTask(t, { categoryId: INBOX_ID }));
+      await commit({ categories: [models.softDelete(category)], tasks });
+    },
+
+    // --- Etiketler ---
+
+    // Aynı adda (büyük/küçük harf fark etmeksizin) etiket varsa onu döndürür.
+    async findOrCreateTag(name, color) {
+      const key = tagKey(name);
+      const existing = liveRecords(get().tags).find(t => t.nameKey === key);
+      if (existing) return existing;
+      const tag = models.createTag({ name, color });
+      await commit({ tags: [tag] });
+      return tag;
+    },
+
+    async updateTag(id, changes) {
+      const tag = models.updateTag(findAlive('tags', id), changes);
+      const clash = liveRecords(get().tags).find(t => t.id !== id && t.nameKey === tag.nameKey);
+      if (clash) throw new Error('Bu adla bir etiket zaten var');
+      await commit({ tags: [tag] });
+      return tag;
+    },
+
+    // Etiket silinince görevler kalır, yalnızca bağlar kaldırılır.
+    async deleteTag(id) {
+      const tag = findAlive('tags', id);
+      const links = liveRecords(get().taskTags)
+        .filter(l => l.tagId === id)
+        .map(l => models.softDelete(l));
+      await commit({ tags: [models.softDelete(tag)], taskTags: links });
+    },
+  };
+});

@@ -56,7 +56,10 @@ Web + mobilde çalışan, öğrenme amaçlı, kapsamlı bir todo uygulaması.
 
 ## Veri modeli
 
-Tüm kayıtlarda: `id` (UUID, `expo-crypto`), `createdAt`, `updatedAt`, `deletedAt` (ISO zaman damgası veya `null`).
+Tüm kayıtlarda: `id` (UUID v4, `expo-crypto` `getRandomBytes` ile), `createdAt`, `updatedAt`, `deletedAt` (ISO zaman damgası veya `null`).
+
+> `crypto.randomUUID` web'de yalnızca güvenli bağlamda (https/localhost) çalıştığı için kullanılmaz.
+> Gelen Kutusu sabit `id: "inbox"` kullanır; senkronizasyonda her cihazda aynı kayıt olur.
 
 ```ts
 Task {
@@ -79,7 +82,7 @@ Category {
 
 Tag {
   name: string
-  nameKey: string             // name.toLocaleLowerCase('tr-TR'), benzersizlik için
+  nameKey: string             // tagKey(name), benzersizlik için
   color: string | null
 }
 
@@ -89,7 +92,7 @@ TaskTag {
 }
 ```
 
-> `nameKey` için `toLocaleLowerCase('tr-TR')` kullanılır. Düz `toLowerCase()` Türkçe "İ/I" harflerinde hatalı sonuç verir.
+> `tagKey` Türkçe kuralını elle uygular (`I → ı`, `İ → i`, sonra `toLowerCase()`). Düz `toLowerCase()` Türkçe "İ/I" harflerinde hatalı sonuç verir; `toLocaleLowerCase('tr-TR')` ise her JS motorunda desteklenmez.
 
 ### AsyncStorage anahtarları
 ```
@@ -127,14 +130,15 @@ src/
   data/
     storage.js               → AsyncStorage okuma/yazma
     migrations.js
-    taskRepository.js
-    categoryRepository.js
-    tagRepository.js
+    repositories.js          → tasks/categories/tags/taskTags: list() + upsertMany()
   store/                     → Zustand store
   domain/
+    ids.js                   → newId, INBOX_ID
+    models.js                → kayıt oluşturma/güncelleme + doğrulama
+    tags.js                  → tagKey
     dates.js                 → gecikmiş/bugün/yaklaşan hesapları
     sorting.js
-    filters.js
+    filters.js               → (6. ve 7. adım)
   components/
     TaskItem.jsx
     TaskForm.jsx
@@ -153,7 +157,8 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
 
 1. ✅ **Altyapı:** `expo-router` kurulumu, giriş noktasının `expo-router/entry` olması, sekme iskeleti, `App.js`'in kaldırılması. `devDependencies` içindeki çakışan `babel-preset-expo ~12.0.0` düzeltmesi.
    Eski liste geçici olarak `src/legacy/LegacyTodoList.jsx` içinde Bugün sekmesinde çalışıyor; 4. ve 6. adımlarda kaldırılacak.
-2. **Veri katmanı:** storage, repository'ler, Zustand store, migration. Saf mantık için birim testleri (`jest-expo`): tarih kuralları, sıralama, migration.
+2. ✅ **Veri katmanı:** storage, repository'ler, Zustand store, migration. Saf mantık için birim testleri (`jest-expo`): tarih kuralları, sıralama, migration.
+   Testler `America/New_York` saat diliminde koşar (UTC gerisinde + yaz saati), böylece tarihlerin UTC olarak yorumlanması yakalanır. Çalıştırmak için: `npm test`.
 3. **Kategoriler:** Gelen Kutusu, oluşturma/düzenleme/silme, Listeler ekranı, kategori ekranı.
 4. **Görevler:** `TaskForm`, detay ve yeni görev modalları, `QuickAdd`, öncelik ve tarih seçimi.
 5. **Etiketler:** `TagPicker` (yazarak oluşturma), etiket yönetimi ekranı, etiket ekranı.

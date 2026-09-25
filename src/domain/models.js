@@ -1,0 +1,115 @@
+import { INBOX_ID, newId, nowIso } from './ids';
+import { isValidDateKey, isValidTime } from './dates';
+import { tagKey } from './tags';
+
+export const PRIORITIES = [0, 1, 2, 3];
+export const DEFAULT_TAG_COLOR = null;
+
+function baseRecord(now) {
+  const ts = nowIso(now);
+  return { id: newId(), createdAt: ts, updatedAt: ts, deletedAt: null };
+}
+
+function requireName(value, label) {
+  const text = (value ?? '').trim();
+  if (!text) throw new Error(`${label} boş olamaz`);
+  return text;
+}
+
+function validateTaskFields(fields) {
+  const task = { ...fields };
+  task.title = requireName(task.title, 'Görev başlığı');
+  task.notes = task.notes ?? '';
+  task.dueDate = task.dueDate || null;
+  task.dueTime = task.dueTime || null;
+  if (task.dueDate && !isValidDateKey(task.dueDate)) throw new Error('Geçersiz tarih');
+  if (task.dueTime && !isValidTime(task.dueTime)) throw new Error('Geçersiz saat');
+  // Saat yalnızca bir güne bağlı olarak anlamlıdır.
+  if (!task.dueDate) task.dueTime = null;
+  if (!PRIORITIES.includes(task.priority)) throw new Error('Geçersiz öncelik');
+  return task;
+}
+
+export function createTask(input, now = new Date()) {
+  return validateTaskFields({
+    ...baseRecord(now),
+    title: input.title,
+    notes: input.notes ?? '',
+    categoryId: input.categoryId ?? INBOX_ID,
+    dueDate: input.dueDate ?? null,
+    dueTime: input.dueTime ?? null,
+    priority: input.priority ?? 0,
+    completedAt: null,
+  });
+}
+
+const EDITABLE_TASK_FIELDS = ['title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority'];
+
+export function updateTask(task, changes, now = new Date()) {
+  const next = { ...task };
+  for (const field of EDITABLE_TASK_FIELDS) {
+    if (field in changes) next[field] = changes[field];
+  }
+  return { ...validateTaskFields(next), updatedAt: nowIso(now) };
+}
+
+export function toggleTask(task, now = new Date()) {
+  const ts = nowIso(now);
+  return { ...task, completedAt: task.completedAt ? null : ts, updatedAt: ts };
+}
+
+export function softDelete(record, now = new Date()) {
+  const ts = nowIso(now);
+  return { ...record, deletedAt: ts, updatedAt: ts };
+}
+
+export function createInbox(now = new Date()) {
+  return {
+    ...baseRecord(now),
+    id: INBOX_ID,
+    name: 'Gelen Kutusu',
+    color: '#6c63ff',
+    icon: 'inbox',
+    isSystem: true,
+    sortOrder: 0,
+  };
+}
+
+export function createCategory(input, sortOrder, now = new Date()) {
+  return {
+    ...baseRecord(now),
+    name: requireName(input.name, 'Kategori adı'),
+    color: input.color ?? '#6c63ff',
+    icon: input.icon ?? 'folder',
+    isSystem: false,
+    sortOrder,
+  };
+}
+
+export function updateCategory(category, changes, now = new Date()) {
+  const next = { ...category, updatedAt: nowIso(now) };
+  if ('name' in changes) next.name = requireName(changes.name, 'Kategori adı');
+  if ('color' in changes) next.color = changes.color;
+  if ('icon' in changes) next.icon = changes.icon;
+  if ('sortOrder' in changes) next.sortOrder = changes.sortOrder;
+  return next;
+}
+
+export function createTag(input, now = new Date()) {
+  const name = requireName(input.name, 'Etiket adı');
+  return { ...baseRecord(now), name, nameKey: tagKey(name), color: input.color ?? DEFAULT_TAG_COLOR };
+}
+
+export function updateTag(tag, changes, now = new Date()) {
+  const next = { ...tag, updatedAt: nowIso(now) };
+  if ('name' in changes) {
+    next.name = requireName(changes.name, 'Etiket adı');
+    next.nameKey = tagKey(next.name);
+  }
+  if ('color' in changes) next.color = changes.color;
+  return next;
+}
+
+export function createTaskTag(taskId, tagId, now = new Date()) {
+  return { ...baseRecord(now), taskId, tagId };
+}

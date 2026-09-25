@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,58 +9,41 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme';
+import { useTodoStore, liveRecords } from '../store/useTodoStore';
+import { sortTasks } from '../domain/sorting';
 
 // Geçici: v1 planının 4. ve 6. adımlarında yeni görev ekranlarıyla değiştirilecek.
 
-const STORAGE_KEY = '@todos';
 const FILTERS = ['Tümü', 'Aktif', 'Tamamlanan'];
 
+// Store işlemleri iyimser güncellenir; kaydetme hatası store.error'a da yazılır.
+const report = promise => promise.catch(e => console.warn(e.message));
+
 export default function LegacyTodoList() {
-  const [todos, setTodos] = useState([]);
+  const allTasks = useTodoStore(s => s.tasks);
+  const { addTask, toggleTask, deleteTasks, updateTask } = useTodoStore.getState();
+  const todos = useMemo(() => sortTasks(liveRecords(allTasks)), [allTasks]);
+
   const [inputText, setInputText] = useState('');
   const [filter, setFilter] = useState('Tümü');
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
 
-  useEffect(() => {
-    loadTodos();
-  }, []);
-
-  async function loadTodos() {
-    try {
-      const json = await AsyncStorage.getItem(STORAGE_KEY);
-      if (json) setTodos(JSON.parse(json));
-    } catch (e) {}
-  }
-
-  async function saveTodos(newTodos) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newTodos));
-    } catch (e) {}
-  }
-
   function addTodo() {
-    const text = inputText.trim();
-    if (!text) return;
-    const newTodos = [...todos, { id: Date.now(), text, done: false }];
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    const title = inputText.trim();
+    if (!title) return;
+    report(addTask({ title }));
     setInputText('');
   }
 
   function toggleDone(id) {
-    const newTodos = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    report(toggleTask(id));
   }
 
   function deleteTodo(id) {
-    const newTodos = todos.filter(t => t.id !== id);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    report(deleteTasks([id]));
   }
 
   function startEdit(id, text) {
@@ -69,11 +52,9 @@ export default function LegacyTodoList() {
   }
 
   function saveEdit() {
-    const text = editingText.trim();
-    if (!text) return;
-    const newTodos = todos.map(t => t.id === editingId ? { ...t, text } : t);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    const title = editingText.trim();
+    if (!title) return;
+    report(updateTask(editingId, { title }));
     setEditingId(null);
     setEditingText('');
   }
@@ -84,27 +65,26 @@ export default function LegacyTodoList() {
   }
 
   function clearDone() {
-    const newTodos = todos.filter(t => !t.done);
-    setTodos(newTodos);
-    saveTodos(newTodos);
+    report(deleteTasks(todos.filter(t => t.completedAt).map(t => t.id)));
   }
 
   const visibleTodos = todos.filter(t => {
-    if (filter === 'Aktif') return !t.done;
-    if (filter === 'Tamamlanan') return t.done;
+    if (filter === 'Aktif') return !t.completedAt;
+    if (filter === 'Tamamlanan') return !!t.completedAt;
     return true;
   });
 
-  const remaining = todos.filter(t => !t.done).length;
+  const remaining = todos.filter(t => !t.completedAt).length;
 
   function renderItem({ item }) {
     const isEditing = editingId === item.id;
+    const done = !!item.completedAt;
 
     return (
-      <View style={[styles.todoItem, item.done && styles.todoItemDone]}>
+      <View style={[styles.todoItem, done && styles.todoItemDone]}>
         <TouchableOpacity onPress={() => toggleDone(item.id)} style={styles.checkbox}>
-          <View style={[styles.checkboxInner, item.done && styles.checkboxChecked]}>
-            {item.done && <Feather name="check" size={13} color="#fff" />}
+          <View style={[styles.checkboxInner, done && styles.checkboxChecked]}>
+            {done && <Feather name="check" size={13} color="#fff" />}
           </View>
         </TouchableOpacity>
 
@@ -118,8 +98,8 @@ export default function LegacyTodoList() {
             returnKeyType="done"
           />
         ) : (
-          <Text style={[styles.todoText, item.done && styles.todoTextDone]} numberOfLines={3}>
-            {item.text}
+          <Text style={[styles.todoText, done && styles.todoTextDone]} numberOfLines={3}>
+            {item.title}
           </Text>
         )}
 
@@ -134,7 +114,7 @@ export default function LegacyTodoList() {
           </>
         ) : (
           <>
-            <TouchableOpacity onPress={() => startEdit(item.id, item.text)} style={styles.iconBtn}>
+            <TouchableOpacity onPress={() => startEdit(item.id, item.title)} style={styles.iconBtn}>
               <Feather name="edit-2" size={16} color="#6c63ff" />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => deleteTodo(item.id)} style={styles.iconBtn}>
@@ -188,7 +168,7 @@ export default function LegacyTodoList() {
           {/* List */}
           <FlatList
             data={visibleTodos}
-            keyExtractor={item => item.id.toString()}
+            keyExtractor={item => item.id}
             renderItem={renderItem}
             contentContainerStyle={visibleTodos.length === 0 && styles.emptyContainer}
             ListEmptyComponent={
