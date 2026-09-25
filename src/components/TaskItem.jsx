@@ -35,13 +35,18 @@ export default function TaskItem({ task, tags = [], onToggle, onPress }) {
         <Text style={[styles.title, done && styles.titleDone]} numberOfLines={2}>
           {task.title}
         </Text>
-        {(dueLabel || tags.length > 0 || checklist.length > 0 || task.recurrence) && (
+        {(dueLabel || tags.length > 0 || checklist.length > 0 || task.recurrence || task.reminders?.length > 0) && (
           <View style={styles.meta}>
             {dueLabel && (
               <>
                 <Feather name="calendar" size={12} color={overdue ? colors.danger : colors.muted} />
                 <Text style={[styles.metaText, overdue && styles.overdue]}>{dueLabel}</Text>
               </>
+            )}
+            {task.reminders?.length > 0 && !done && (
+              <View accessibilityLabel={strings.reminders.hasReminders(task.reminders.length)}>
+                <Feather name="bell" size={12} color={colors.muted} />
+              </View>
             )}
             {task.recurrence && (
               <View accessibilityLabel={strings.recurrence.repeats(recurrenceLabel(task.recurrence))}>

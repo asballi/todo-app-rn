@@ -248,7 +248,7 @@ Task {
 ```
 - Migration v2 → v3: mevcut görevlere `reminders: []`, `recurrence: null`, `nextTaskId: null`, `checklist: []` eklenir.
 - Ayarlar `@todo/settings` anahtarında: `{ defaultReminderTime: '09:00' }`.
-- Kurulu bildirimlerin kimlikleri cihaza özeldir (`@todo/scheduledNotifications`), senkronize edilmez.
+- Kurulu bildirimler cihaza özeldir ve senkronize edilmez. Mobilde işletim sisteminin listesi kullanılır (her bildirimin `data.key` alanı plandaki anahtardır); web'de sekmedeki zamanlayıcılar tutulur. Ayrı bir depolama anahtarı gerekmez.
 
 ### v2 uygulama adımları
 
@@ -256,7 +256,12 @@ Task {
    Kontrol listesi formun geri kalanı gibi "Kaydet" ile kaydedilir; kaydetmeden çıkılırsa değişiklikler kaybolur (otomatik kaydetme v3'te değerlendirilebilir).
 2. ✅ **Tekrarlayan görevler:** `nextDueDate` / `stepDate` (`src/domain/recurrence.js`, kapsamlı testler), tamamlama/geri alma kuralları, `RecurrencePicker`, satırda simge.
    Haftalık gün seçiminde hafta Pazartesi başlar; "N haftada bir" kuralında seçili günler bitince N hafta sonrasının ilk seçili gününe geçilir. Kullanıcı bitiş tarihini değiştirirse aylık/yıllık serinin günü yeni tarihten alınır.
-3. **Hatırlatıcılar:** `ReminderPicker`, Ayarlar ekranı (varsayılan saat), bildirim zamanlayıcı (mobil `expo-notifications`, web Notification API + şerit), izin akışı, bildirime dokununca detay.
+3. ✅ **Hatırlatıcılar:** `ReminderPicker`, Ayarlar ekranı (varsayılan saat), bildirim zamanlayıcı (mobil `expo-notifications`, web Notification API + şerit), izin akışı, bildirime dokununca detay.
+   - `src/domain/reminders.js`: `plannedNotifications` o an kurulu olması gereken bildirimleri hesaplar; anahtar görev, süre, an, başlık ve gövdeden oluşur, biri değişince bildirim yeniden kurulur.
+   - `src/notifications/scheduler.js`: planı kurulu bildirimlerle eşitler (platformdan bağımsız, sahte adaptörle test edilir). Platform kodu `adapter.native.js` / `adapter.web.js` içinde; web paketi `expo-notifications` içermez.
+   - Eşitleme: görev/ayar değişince (300 ms gecikmeyle), uygulama öne gelince ve saatte bir.
+   - Web'de görünür sekmede uygulama içi şerit, arka plandaki sekmede (izin varsa) tarayıcı bildirimi. Şerit kendiliğinden kapanmaz. `setTimeout` sınırı nedeniyle ~24 günden uzak hatırlatıcılar sonraki saatlik eşitlemelerde kurulur.
+   - Mobil bildirimler gerçek cihazda henüz denenmedi (yalnızca paketleme doğrulandı).
 4. **Metinleri dil dosyasına taşıma** (V5): davranış değişikliği olmadan, yalnızca metin taşıyan commit.
 
 ## Sonraki sürümler

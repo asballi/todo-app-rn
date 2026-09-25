@@ -19,6 +19,16 @@ function createCollectionRepository(key) {
   };
 }
 
+// Ayarlar tek bir nesnedir; kayıtlı değerler varsayılanların üzerine yazılır.
+export const settingsRepository = {
+  async get(defaults) {
+    return { ...defaults, ...(await readJson(KEYS.settings, {})) };
+  },
+  save(settings) {
+    return withKeyLock(KEYS.settings, () => writeJsonMany([[KEYS.settings, settings]]));
+  },
+};
+
 export const taskRepository = createCollectionRepository(KEYS.tasks);
 export const categoryRepository = createCollectionRepository(KEYS.categories);
 export const tagRepository = createCollectionRepository(KEYS.tags);

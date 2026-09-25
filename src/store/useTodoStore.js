@@ -5,10 +5,13 @@ import {
   categoryRepository,
   tagRepository,
   taskTagRepository,
+  settingsRepository,
 } from '../data/repositories';
 import { INBOX_ID } from '../domain/ids';
 import { tagKey } from '../domain/tags';
 import { nextDueDate } from '../domain/recurrence';
+import { DEFAULT_REMINDER_TIME } from '../domain/reminders';
+import { isValidTime } from '../domain/dates';
 import * as models from '../domain/models';
 
 const REPOSITORIES = {
@@ -36,6 +39,7 @@ export const initialState = {
   categories: [],
   tags: [],
   taskTags: [],
+  settings: { defaultReminderTime: DEFAULT_REMINDER_TIME },
 };
 
 export const useTodoStore = create((set, get) => {
@@ -97,13 +101,14 @@ export const useTodoStore = create((set, get) => {
       set({ status: 'loading', error: null });
       try {
         await runMigrations();
-        const [tasks, categories, tags, taskTags] = await Promise.all([
+        const [tasks, categories, tags, taskTags, settings] = await Promise.all([
           taskRepository.list(),
           categoryRepository.list(),
           tagRepository.list(),
           taskTagRepository.list(),
+          settingsRepository.get(initialState.settings),
         ]);
-        set({ status: 'ready', tasks, categories, tags, taskTags });
+        set({ status: 'ready', tasks, categories, tags, taskTags, settings });
       } catch (e) {
         console.warn('Veriler yüklenemedi', e);
         set({ status: 'error', error: e.message });
@@ -168,6 +173,18 @@ export const useTodoStore = create((set, get) => {
     async setTaskTags(taskId, tagIds) {
       findAlive('tasks', taskId);
       await commit({ taskTags: tagLinkChanges(taskId, tagIds) });
+    },
+
+    // --- Ayarlar ---
+
+    async updateSettings(changes) {
+      if ('defaultReminderTime' in changes && !isValidTime(changes.defaultReminderTime)) {
+        throw new Error('Geçersiz saat');
+      }
+      const settings = { ...get().settings, ...changes };
+      set({ settings });
+      await settingsRepository.save(settings);
+      return settings;
     },
 
     // --- Kategoriler ---

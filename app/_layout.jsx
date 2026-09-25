@@ -3,6 +3,8 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useTodoStore } from '../src/store/useTodoStore';
+import { useReminders } from '../src/notifications/useReminders';
+import ReminderBanner from '../src/components/ReminderBanner';
 import { colors } from '../src/theme';
 
 export default function RootLayout() {
@@ -36,9 +38,18 @@ export default function RootLayout() {
         <Stack.Screen name="task/[id]" options={modalOptions} />
         <Stack.Screen name="tag-form" options={modalOptions} />
         <Stack.Screen name="manage-tags" options={modalOptions} />
+        <Stack.Screen name="settings" options={modalOptions} />
       </Stack>
+      <ReminderManager />
+      <ReminderBanner />
     </>
   );
+}
+
+// Veriler hazır olduktan sonra bildirim eşitlemesini başlatır.
+function ReminderManager() {
+  useReminders();
+  return null;
 }
 
 const modalOptions = {

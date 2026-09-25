@@ -156,6 +156,30 @@ describe('tekrarlayan görevler', () => {
   });
 });
 
+describe('ayarlar', () => {
+  test('varsayılan hatırlatma saati 09:00, değişiklik kaydedilir ve yeniden yüklenir', async () => {
+    expect(store().settings.defaultReminderTime).toBe('09:00');
+    await store().updateSettings({ defaultReminderTime: '08:15' });
+    expect(await readJson(KEYS.settings)).toEqual({ defaultReminderTime: '08:15' });
+
+    useTodoStore.setState(initialState);
+    await store().init();
+    expect(store().settings.defaultReminderTime).toBe('08:15');
+  });
+
+  test('geçersiz saat reddedilir', async () => {
+    await expect(store().updateSettings({ defaultReminderTime: '25:00' })).rejects.toThrow('Geçersiz saat');
+    expect(store().settings.defaultReminderTime).toBe('09:00');
+  });
+});
+
+test('hatırlatıcılar kaydedilir, tarih kaldırılınca silinir', async () => {
+  const task = await store().addTask({ title: 'x', dueDate: '2030-01-01', reminders: [60, 0] });
+  expect(task.reminders).toEqual([0, 60]);
+  const updated = await store().updateTask(task.id, { dueDate: null });
+  expect(updated.reminders).toEqual([]);
+});
+
 describe('kategoriler', () => {
   test('Gelen Kutusu silinemez ama yeniden adlandırılabilir', async () => {
     await expect(store().deleteCategory(INBOX_ID)).rejects.toThrow('silinemez');

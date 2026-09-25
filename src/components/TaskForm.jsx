@@ -7,6 +7,7 @@ import CategoryPicker from './CategoryPicker';
 import TagPicker from './TagPicker';
 import ChecklistEditor from './ChecklistEditor';
 import RecurrencePicker from './RecurrencePicker';
+import ReminderPicker from './ReminderPicker';
 import { strings } from '../strings';
 import { quickDueDates } from '../domain/dates';
 import { colors } from '../theme';
@@ -25,6 +26,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
   const [tagIds, setTagIds] = useState(initial.tagIds ?? []);
   const [checklist, setChecklist] = useState(initial.checklist ?? []);
   const [recurrence, setRecurrence] = useState(initial.recurrence ?? null);
+  const [reminders, setReminders] = useState(initial.reminders ?? []);
   const [saving, setSaving] = useState(false);
 
   const canSave = title.trim().length > 0 && !saving;
@@ -35,6 +37,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
     if (!value) {
       setDueTime(null);
       setRecurrence(null);
+      setReminders([]);
     }
   }
 
@@ -42,7 +45,9 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
     if (!canSave) return;
     setSaving(true);
     try {
-      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority, tagIds, checklist, recurrence });
+      await onSubmit({
+        title, notes, categoryId, dueDate, dueTime, priority, tagIds, checklist, recurrence, reminders,
+      });
     } finally {
       setSaving(false);
     }
@@ -104,6 +109,9 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
         <>
           <Text style={styles.label}>{strings.recurrence.title}</Text>
           <RecurrencePicker value={recurrence} dueDate={dueDate} onChange={setRecurrence} />
+
+          <Text style={styles.label}>{strings.reminders.title}</Text>
+          <ReminderPicker value={reminders} dueTime={dueTime} onChange={setReminders} />
         </>
       )}
 

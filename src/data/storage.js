@@ -6,6 +6,7 @@ export const KEYS = {
   categories: '@todo/categories',
   tags: '@todo/tags',
   taskTags: '@todo/taskTags',
+  settings: '@todo/settings',
   legacyTodos: '@todos',
 };
 

@@ -2,6 +2,7 @@ import { INBOX_ID, newId, nowIso } from './ids';
 import { isValidDateKey, isValidTime } from './dates';
 import { tagKey } from './tags';
 import { normalizeRecurrence } from './recurrence';
+import { normalizeReminders } from './reminders';
 
 export const PRIORITIES = [0, 1, 2, 3];
 
@@ -57,6 +58,7 @@ function validateTaskFields(fields) {
   task.checklist = normalizeChecklist(task.checklist ?? []);
   // Tekrar bir bitiş tarihine bağlıdır; tarih kalkınca tekrar da kalkar.
   task.recurrence = normalizeRecurrence(task.recurrence ?? null, task.dueDate);
+  task.reminders = normalizeReminders(task.reminders ?? [], task.dueDate);
   return task;
 }
 
@@ -78,7 +80,7 @@ export function createTask(input, now = new Date()) {
 }
 
 const EDITABLE_TASK_FIELDS = [
-  'title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority', 'checklist', 'recurrence',
+  'title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority', 'checklist', 'recurrence', 'reminders',
 ];
 
 export function updateTask(task, changes, now = new Date()) {
