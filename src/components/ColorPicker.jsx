@@ -1,11 +1,23 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { categoryColors } from '../theme';
+import { categoryColors, colors as theme } from '../theme';
 
-export default function ColorPicker({ value, onChange, colors = categoryColors }) {
+// allowNone: "renksiz" seçeneği ekler (value = null).
+export default function ColorPicker({ value, onChange, colors = categoryColors, allowNone = false }) {
   return (
     <View style={styles.row}>
+      {allowNone && (
+        <TouchableOpacity
+          accessibilityRole="radio"
+          accessibilityLabel="Renksiz"
+          aria-checked={value == null}
+          onPress={() => onChange(null)}
+          style={[styles.swatch, styles.none, value == null && styles.noneSelected]}
+        >
+          <Feather name="slash" size={16} color={value == null ? '#fff' : theme.muted} />
+        </TouchableOpacity>
+      )}
       {colors.map(color => (
         <TouchableOpacity
           key={color}
@@ -27,6 +39,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  none: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+  },
+  noneSelected: {
+    backgroundColor: theme.tagDefault,
+    borderColor: theme.tagDefault,
   },
   swatch: {
     width: 34,

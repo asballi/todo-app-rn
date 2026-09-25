@@ -78,6 +78,25 @@ describe('görevler', () => {
   });
 });
 
+test('updateTask tagIds ile etiketleri aynı işlemde günceller', async () => {
+  const a = await store().findOrCreateTag('a');
+  const b = await store().findOrCreateTag('b');
+  const task = await store().addTask({ title: 'x', tagIds: [a.id] });
+
+  await store().updateTask(task.id, { title: 'y', tagIds: [b.id] });
+
+  expect(store().tasks[0].title).toBe('y');
+  expect(liveRecords(store().taskTags).map(l => l.tagId)).toEqual([b.id]);
+  expect(liveRecords(await persisted('taskTags')).map(l => l.tagId)).toEqual([b.id]);
+});
+
+test('updateTask tagIds verilmezse etiketlere dokunmaz', async () => {
+  const a = await store().findOrCreateTag('a');
+  const task = await store().addTask({ title: 'x', tagIds: [a.id] });
+  await store().updateTask(task.id, { title: 'y' });
+  expect(liveRecords(store().taskTags)).toHaveLength(1);
+});
+
 describe('kategoriler', () => {
   test('Gelen Kutusu silinemez ama yeniden adlandırılabilir', async () => {
     await expect(store().deleteCategory(INBOX_ID)).rejects.toThrow('silinemez');
@@ -110,6 +129,13 @@ describe('etiketler', () => {
     const second = await store().findOrCreateTag('  iş ');
     expect(second.id).toBe(first.id);
     expect(store().tags).toHaveLength(1);
+  });
+
+  test('addTag aynı adda etiket varsa hata verir', async () => {
+    await store().addTag({ name: 'Acil', color: '#e05c5c' });
+    await expect(store().addTag({ name: 'ACİL' })).rejects.toThrow('zaten var');
+    expect(store().tags).toHaveLength(1);
+    expect(store().tags[0].color).toBe('#e05c5c');
   });
 
   test('başka bir etiketin adına yeniden adlandırılamaz', async () => {

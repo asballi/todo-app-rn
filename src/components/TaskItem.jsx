@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors, priorityColors } from '../theme';
 import { formatDueLabel, isOverdue } from '../domain/dates';
 
-export default function TaskItem({ task, onToggle, onPress }) {
+export default function TaskItem({ task, tags = [], onToggle, onPress }) {
   const done = !!task.completedAt;
   const dueLabel = formatDueLabel(task);
   const overdue = isOverdue(task);
@@ -31,10 +31,19 @@ export default function TaskItem({ task, onToggle, onPress }) {
         <Text style={[styles.title, done && styles.titleDone]} numberOfLines={2}>
           {task.title}
         </Text>
-        {dueLabel && (
+        {(dueLabel || tags.length > 0) && (
           <View style={styles.meta}>
-            <Feather name="calendar" size={12} color={overdue ? colors.danger : colors.muted} />
-            <Text style={[styles.metaText, overdue && styles.overdue]}>{dueLabel}</Text>
+            {dueLabel && (
+              <>
+                <Feather name="calendar" size={12} color={overdue ? colors.danger : colors.muted} />
+                <Text style={[styles.metaText, overdue && styles.overdue]}>{dueLabel}</Text>
+              </>
+            )}
+            {tags.map(tag => (
+              <Text key={tag.id} style={[styles.metaText, { color: tag.color ?? colors.tagDefault }]}>
+                #{tag.name}
+              </Text>
+            ))}
           </View>
         )}
       </View>
@@ -78,8 +87,9 @@ const styles = StyleSheet.create({
   },
   meta: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   metaText: {
     fontSize: 12,

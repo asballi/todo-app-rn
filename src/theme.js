@@ -6,6 +6,7 @@ export const colors = {
   muted: '#999',
   border: '#e0e0e0',
   danger: '#e05c5c',
+  tagDefault: '#8a8a9e',
 };
 
 export const categoryColors = [

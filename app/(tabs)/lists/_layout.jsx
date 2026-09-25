@@ -14,6 +14,7 @@ export default function ListsLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'Listeler' }} />
       <Stack.Screen name="category/[id]" options={{ title: '' }} />
+      <Stack.Screen name="tag/[id]" options={{ title: '' }} />
     </Stack>
   );
 }

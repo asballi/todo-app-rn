@@ -3,13 +3,15 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme';
 
-// `selected` verilirse seçim çipidir (radio), verilmezse eylem butonudur.
-export default function Chip({ label, icon, selected, color = colors.primary, onPress, accessibilityLabel }) {
+// `selected` verilirse seçim çipidir (tekli seçimde radio, `multiple` ile
+// checkbox), verilmezse eylem butonudur.
+export default function Chip({ label, icon, selected, multiple, color = colors.primary, onPress, accessibilityLabel }) {
   const selectable = selected !== undefined;
+  const role = selectable ? (multiple ? 'checkbox' : 'radio') : 'button';
   return (
     <TouchableOpacity
       onPress={onPress}
-      accessibilityRole={selectable ? 'radio' : 'button'}
+      accessibilityRole={role}
       accessibilityLabel={accessibilityLabel ?? label}
       aria-checked={selectable ? !!selected : undefined}
       style={[styles.chip, selected && { backgroundColor: color, borderColor: color }]}

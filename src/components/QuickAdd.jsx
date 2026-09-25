@@ -14,7 +14,11 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Görev ekle...'
   const [title, setTitle] = useState('');
 
   function openForm() {
-    router.push({ pathname: '/task/new', params: { ...defaults, title: title.trim() } });
+    // URL parametreleri metin olmalı; diziler virgülle birleştirilir.
+    const params = Object.fromEntries(
+      Object.entries(defaults).map(([key, v]) => [key, Array.isArray(v) ? v.join(',') : v]),
+    );
+    router.push({ pathname: '/task/new', params: { ...params, title: title.trim() } });
     setTitle('');
   }
 

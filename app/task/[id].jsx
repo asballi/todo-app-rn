@@ -14,8 +14,11 @@ export default function TaskDetailScreen() {
 
   // Açılıştaki hali kullanılır; silme/tamamlama sonrası form sıfırlanmaz.
   const [task] = useState(() => {
-    const found = useTodoStore.getState().tasks.find(t => t.id === id);
-    return found && isAlive(found) ? found : null;
+    const { tasks, taskTags } = useTodoStore.getState();
+    const found = tasks.find(t => t.id === id);
+    if (!found || !isAlive(found)) return null;
+    const tagIds = taskTags.filter(l => l.taskId === id && isAlive(l)).map(l => l.tagId);
+    return { ...found, tagIds };
   });
 
   if (!task) return <Redirect href="/today" />;

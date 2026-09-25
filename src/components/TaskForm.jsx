@@ -4,6 +4,7 @@ import Chip from './Chip';
 import DateInput from './DateInput';
 import PriorityPicker from './PriorityPicker';
 import CategoryPicker from './CategoryPicker';
+import TagPicker from './TagPicker';
 import { quickDueDates } from '../domain/dates';
 import { colors } from '../theme';
 
@@ -18,6 +19,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
   const [dueDate, setDueDate] = useState(initial.dueDate);
   const [dueTime, setDueTime] = useState(initial.dueTime);
   const [priority, setPriority] = useState(initial.priority);
+  const [tagIds, setTagIds] = useState(initial.tagIds ?? []);
   const [saving, setSaving] = useState(false);
 
   const canSave = title.trim().length > 0 && !saving;
@@ -31,7 +33,7 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
     if (!canSave) return;
     setSaving(true);
     try {
-      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority });
+      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority, tagIds });
     } finally {
       setSaving(false);
     }
@@ -88,6 +90,9 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
 
       <Text style={styles.label}>Kategori</Text>
       <CategoryPicker value={categoryId} onChange={setCategoryId} />
+
+      <Text style={styles.label}>Etiketler</Text>
+      <TagPicker value={tagIds} onChange={setTagIds} />
 
       <Text style={styles.label}>Öncelik</Text>
       <PriorityPicker value={priority} onChange={setPriority} />

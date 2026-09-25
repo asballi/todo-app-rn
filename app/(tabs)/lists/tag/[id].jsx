@@ -4,33 +4,35 @@ import { Stack, Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTodoStore, isAlive } from '../../../../src/store/useTodoStore';
 import { useTagsByTask } from '../../../../src/store/hooks';
-import { tasksInCategory } from '../../../../src/domain/filters';
+import { tasksWithTag } from '../../../../src/domain/filters';
 import TaskItem from '../../../../src/components/TaskItem';
 import QuickAdd from '../../../../src/components/QuickAdd';
 import { showError } from '../../../../src/components/confirm';
 import { colors } from '../../../../src/theme';
 
-export default function CategoryScreen() {
+export default function TagScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const category = useTodoStore(s => s.categories.find(c => c.id === id));
+  const tag = useTodoStore(s => s.tags.find(t => t.id === id));
   const allTasks = useTodoStore(s => s.tasks);
+  const taskTags = useTodoStore(s => s.taskTags);
   const tagsByTask = useTagsByTask();
-  const tasks = useMemo(() => tasksInCategory(allTasks, id), [allTasks, id]);
-  const defaults = useMemo(() => ({ categoryId: id }), [id]);
+  const tasks = useMemo(() => tasksWithTag(allTasks, taskTags, id), [allTasks, taskTags, id]);
+  const defaults = useMemo(() => ({ tagIds: [id] }), [id]);
 
-  // Kategori silindiyse (ör. düzenleme ekranından) listeye dön.
-  if (!category || !isAlive(category)) return <Redirect href="/lists" />;
+  // Etiket silindiyse (ör. düzenleme ekranından) listeye dön.
+  if (!tag || !isAlive(tag)) return <Redirect href="/lists" />;
+  const color = tag.color ?? colors.tagDefault;
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: category.name,
+          title: `#${tag.name}`,
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => router.push({ pathname: '/category-form', params: { id } })}
-              accessibilityLabel="Kategoriyi düzenle"
+              onPress={() => router.push({ pathname: '/tag-form', params: { id } })}
+              accessibilityLabel="Etiketi düzenle"
               style={styles.headerButton}
             >
               <Feather name="edit-2" size={18} color={colors.primary} />
@@ -38,7 +40,7 @@ export default function CategoryScreen() {
           ),
         }}
       />
-      <QuickAdd defaults={defaults} placeholder={`${category.name} listesine ekle...`} />
+      <QuickAdd defaults={defaults} placeholder={`#${tag.name} etiketiyle ekle...`} />
       <FlatList
         data={tasks}
         keyExtractor={t => t.id}
@@ -52,8 +54,8 @@ export default function CategoryScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name={category.icon} size={32} color={category.color} />
-            <Text style={styles.emptyText}>Bu kategoride görev yok</Text>
+            <Feather name="hash" size={32} color={color} />
+            <Text style={styles.emptyText}>Bu etiketle görev yok</Text>
           </View>
         }
         keyboardShouldPersistTaps="handled"

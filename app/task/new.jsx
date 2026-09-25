@@ -7,14 +7,17 @@ import { useTodoStore, isAlive } from '../../src/store/useTodoStore';
 import { INBOX_ID } from '../../src/domain/ids';
 import { isValidDateKey } from '../../src/domain/dates';
 
-// Parametreler (hepsi isteğe bağlı): title, categoryId, dueDate.
+// Parametreler (hepsi isteğe bağlı): title, categoryId, dueDate,
+// tagIds (virgülle ayrılmış).
 // Hızlı ekleme satırı bulunduğu ekranın varsayılanlarını buraya aktarır.
 export default function NewTaskScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
 
   const [initial] = useState(() => {
-    const category = useTodoStore.getState().categories.find(c => c.id === params.categoryId);
+    const { categories, tags } = useTodoStore.getState();
+    const category = categories.find(c => c.id === params.categoryId);
+    const requestedTagIds = (params.tagIds ?? '').split(',');
     return {
       title: params.title ?? '',
       notes: '',
@@ -22,6 +25,7 @@ export default function NewTaskScreen() {
       dueDate: isValidDateKey(params.dueDate) ? params.dueDate : null,
       dueTime: null,
       priority: 0,
+      tagIds: tags.filter(t => isAlive(t) && requestedTagIds.includes(t.id)).map(t => t.id),
     };
   });
 

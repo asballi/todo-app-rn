@@ -127,12 +127,13 @@ app/
   task/new.jsx               → yeni görev (modal)
   category-form.jsx          → yeni/düzenle kategori (modal, ?id=...)
   manage-tags.jsx
+  tag-form.jsx               → yeni/düzenle etiket (modal, ?id=...)
 src/
   data/
     storage.js               → AsyncStorage okuma/yazma
     migrations.js
     repositories.js          → tasks/categories/tags/taskTags: list() + upsertMany()
-  store/                     → Zustand store
+  store/                     → Zustand store + hooks (useTagsByTask)
   domain/
     ids.js                   → newId, INBOX_ID
     models.js                → kayıt oluşturma/güncelleme + doğrulama
@@ -151,7 +152,8 @@ src/
     Chip.jsx                 → seçim çipi (radio) / eylem çipi (button)
     DateInput.jsx            → mobil: @react-native-community/datetimepicker
     DateInput.web.jsx        → web: <input type="date|time">
-    ColorPicker.jsx
+    ColorPicker.jsx          → allowNone ile "renksiz" seçeneği
+    ListRow.jsx              → Listeler / etiket yönetimi satırları
     IconPicker.jsx
     confirm.js               → web'de window.confirm, mobilde Alert
     navigation.js            → goBack: geçmiş yoksa yedek adrese git
@@ -171,7 +173,8 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
    `TaskItem` (öncelik renkli checkbox, tarih etiketi) ve `QuickAdd` bu adımda eklendi; 4. adımda görev detayına bağlanacak.
 4. ✅ **Görevler:** `TaskForm`, detay ve yeni görev modalları, `QuickAdd`, öncelik ve tarih seçimi.
    `QuickAdd` ayrıntı butonu, yazılan başlık ve ekranın varsayılanlarıyla tam formu açar. Bugün sekmesindeki geçici listede satır içi düzenleme kaldırıldı (K10).
-5. **Etiketler:** `TagPicker` (yazarak oluşturma), etiket yönetimi ekranı, etiket ekranı.
+5. ✅ **Etiketler:** `TagPicker` (yazarak oluşturma), etiket yönetimi ekranı, etiket ekranı.
+   Görev satırlarında etiketler `#ad` olarak görünür. `updateTask` `tagIds` ile görev ve bağları tek işlemde kaydeder. `/task/new` `tagIds` parametresini (virgülle ayrılmış) kabul eder.
 6. **Akıllı listeler:** Bugün, Yaklaşan, Gecikmiş; varsayılan sıralama; `CompletedSection`.
 7. **Arama:** başlık/not araması + kategori, etiket (VE) ve öncelik filtreleri.
 

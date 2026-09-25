@@ -73,6 +73,21 @@ export const useTodoStore = create((set, get) => {
     });
   }
 
+  // Görevin etiketlerini tagIds'e eşitlemek için gereken bağ değişiklikleri.
+  function tagLinkChanges(taskId, tagIds) {
+    const wanted = new Set(tagIds);
+    const current = get().taskTags.filter(l => l.taskId === taskId && isAlive(l));
+    const currentTagIds = new Set(current.map(l => l.tagId));
+    const removed = current.filter(l => !wanted.has(l.tagId)).map(l => models.softDelete(l));
+    const added = linksToAdd(taskId, tagIds.filter(id => !currentTagIds.has(id)));
+    return [...removed, ...added];
+  }
+
+  function assertUniqueTagName(nameKey, exceptId) {
+    const clash = liveRecords(get().tags).find(t => t.id !== exceptId && t.nameKey === nameKey);
+    if (clash) throw new Error('Bu adla bir etiket zaten var');
+  }
+
   return {
     ...initialState,
 
@@ -104,10 +119,13 @@ export const useTodoStore = create((set, get) => {
       return task;
     },
 
+    // changes.tagIds verilirse görevin etiketleri de aynı işlemde güncellenir.
     async updateTask(id, changes) {
-      if ('categoryId' in changes) findAlive('categories', changes.categoryId);
-      const task = models.updateTask(findAlive('tasks', id), changes);
-      await commit({ tasks: [task] });
+      const { tagIds, ...fields } = changes;
+      if ('categoryId' in fields) findAlive('categories', fields.categoryId);
+      const task = models.updateTask(findAlive('tasks', id), fields);
+      const taskTags = tagIds ? tagLinkChanges(id, tagIds) : [];
+      await commit({ tasks: [task], taskTags });
       return task;
     },
 
@@ -124,12 +142,7 @@ export const useTodoStore = create((set, get) => {
 
     async setTaskTags(taskId, tagIds) {
       findAlive('tasks', taskId);
-      const wanted = new Set(tagIds);
-      const current = get().taskTags.filter(l => l.taskId === taskId && isAlive(l));
-      const currentTagIds = new Set(current.map(l => l.tagId));
-      const removed = current.filter(l => !wanted.has(l.tagId)).map(l => models.softDelete(l));
-      const added = linksToAdd(taskId, tagIds.filter(id => !currentTagIds.has(id)));
-      await commit({ taskTags: [...removed, ...added] });
+      await commit({ taskTags: tagLinkChanges(taskId, tagIds) });
     },
 
     // --- Kategoriler ---
@@ -169,10 +182,17 @@ export const useTodoStore = create((set, get) => {
       return tag;
     },
 
+    // Etiket formu için: aynı adda etiket varsa hata verir.
+    async addTag(input) {
+      const tag = models.createTag(input);
+      assertUniqueTagName(tag.nameKey);
+      await commit({ tags: [tag] });
+      return tag;
+    },
+
     async updateTag(id, changes) {
       const tag = models.updateTag(findAlive('tags', id), changes);
-      const clash = liveRecords(get().tags).find(t => t.id !== id && t.nameKey === tag.nameKey);
-      if (clash) throw new Error('Bu adla bir etiket zaten var');
+      assertUniqueTagName(tag.nameKey, id);
       await commit({ tags: [tag] });
       return tag;
     },

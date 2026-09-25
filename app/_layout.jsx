@@ -34,6 +34,8 @@ export default function RootLayout() {
         <Stack.Screen name="category-form" options={modalOptions} />
         <Stack.Screen name="task/new" options={modalOptions} />
         <Stack.Screen name="task/[id]" options={modalOptions} />
+        <Stack.Screen name="tag-form" options={modalOptions} />
+        <Stack.Screen name="manage-tags" options={modalOptions} />
       </Stack>
     </>
   );

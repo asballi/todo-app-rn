@@ -1,4 +1,14 @@
-import { sortCategories, tasksInCategory, openTaskCountsByCategory } from '../filters';
+import {
+  sortCategories,
+  tasksInCategory,
+  openTaskCountsByCategory,
+  sortTags,
+  tagsByTask,
+  tasksWithTag,
+  openTaskCountsByTag,
+  suggestTags,
+} from '../filters';
+import { tagKey } from '../tags';
 
 const task = (id, categoryId, fields = {}) => ({
   id,
@@ -45,4 +55,44 @@ test('openTaskCountsByCategory yalnızca açık ve canlı görevleri sayar', () 
       task('c', 'inbox'),
     ]),
   ).toEqual({ work: 2, inbox: 1 });
+});
+
+describe('etiket filtreleri', () => {
+  const tag = (id, name, fields = {}) => ({ id, name, nameKey: tagKey(name), deletedAt: null, ...fields });
+  const link = (taskId, tagId, fields = {}) => ({ id: `${taskId}-${tagId}`, taskId, tagId, deletedAt: null, ...fields });
+  const tags = [tag('t1', 'telefon'), tag('t2', 'Acil'), tag('t3', 'eski', { deletedAt: 'x' }), tag('t4', 'İş')];
+  const links = [
+    link('a', 't1'),
+    link('a', 't2'),
+    link('a', 't3'),
+    link('b', 't2'),
+    link('c', 't2', { deletedAt: 'x' }),
+    link('done', 't2'),
+  ];
+  const tasks = [task('a', 'inbox'), task('b', 'inbox'), task('c', 'inbox'), task('done', 'inbox', { completedAt: 'x' })];
+
+  test('sortTags Türkçe alfabeye göre sıralar ve silinmişleri çıkarır', () => {
+    expect(sortTags(tags).map(t => t.name)).toEqual(['Acil', 'İş', 'telefon']);
+  });
+
+  test('tagsByTask canlı bağları ve etiketleri ada göre döndürür', () => {
+    const result = tagsByTask(tags, links);
+    expect(result.a.map(t => t.name)).toEqual(['Acil', 'telefon']);
+    expect(result.b.map(t => t.name)).toEqual(['Acil']);
+    expect(result.c).toBeUndefined();
+  });
+
+  test('tasksWithTag canlı bağlı görevleri sıralı döndürür', () => {
+    expect(tasksWithTag(tasks, links, 't2').map(t => t.id)).toEqual(['a', 'b', 'done']);
+  });
+
+  test('openTaskCountsByTag yalnızca açık görevleri sayar', () => {
+    expect(openTaskCountsByTag(tasks, links)).toEqual({ t1: 1, t2: 2, t3: 1 });
+  });
+
+  test('suggestTags büyük/küçük harf ve Türkçe kurallarıyla eşleştirir', () => {
+    expect(suggestTags(tags, 'İ').map(t => t.name)).toEqual(['Acil', 'İş']);
+    expect(suggestTags(tags, 'ACİ').map(t => t.name)).toEqual(['Acil']);
+    expect(suggestTags(tags, '', ['t2']).map(t => t.name)).toEqual(['İş', 'telefon']);
+  });
 });

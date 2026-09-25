@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native
 import { useRouter } from 'expo-router';
 import { colors } from '../theme';
 import { useTodoStore, liveRecords } from '../store/useTodoStore';
+import { useTagsByTask } from '../store/hooks';
 import { sortTasks } from '../domain/sorting';
 import TaskItem from '../components/TaskItem';
 import QuickAdd from '../components/QuickAdd';
@@ -15,6 +16,7 @@ const FILTERS = ['Tümü', 'Aktif', 'Tamamlanan'];
 export default function LegacyTodoList() {
   const router = useRouter();
   const allTasks = useTodoStore(s => s.tasks);
+  const tagsByTask = useTagsByTask();
   const todos = useMemo(() => sortTasks(liveRecords(allTasks)), [allTasks]);
   const [filter, setFilter] = useState('Tümü');
 
@@ -52,6 +54,7 @@ export default function LegacyTodoList() {
         renderItem={({ item }) => (
           <TaskItem
             task={item}
+            tags={tagsByTask[item.id]}
             onToggle={() => useTodoStore.getState().toggleTask(item.id).catch(showError)}
             onPress={() => router.push(`/task/${item.id}`)}
           />
