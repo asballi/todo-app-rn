@@ -3,7 +3,7 @@ import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Stack, Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import TaskForm from '../../src/components/TaskForm';
-import { confirm, showError } from '../../src/components/confirm';
+import { showError } from '../../src/components/confirm';
 import { goBack } from '../../src/components/navigation';
 import { useTodoStore, isAlive } from '../../src/store/useTodoStore';
 import { colors } from '../../src/theme';
@@ -36,9 +36,9 @@ export default function TaskDetailScreen() {
     }
   }
 
-  async function remove() {
-    const ok = await confirm({ title: strings.task.deleteConfirm(task.title), confirmText: strings.common.delete, destructive: true });
-    if (ok) run(() => useTodoStore.getState().deleteTasks([id]));
+  // Onay sorulmaz; liste ekranında "Geri al" şeridi çıkar.
+  function remove() {
+    run(() => useTodoStore.getState().deleteTasks([id]));
   }
 
   return (

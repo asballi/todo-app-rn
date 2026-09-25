@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useTodoStore } from '../src/store/useTodoStore';
 import { useReminders } from '../src/notifications/useReminders';
 import ReminderBanner from '../src/components/ReminderBanner';
+import UndoBar from '../src/components/UndoBar';
 import { colors } from '../src/theme';
 import { strings } from '../src/strings';
 
@@ -43,6 +44,7 @@ export default function RootLayout() {
       </Stack>
       <ReminderManager />
       <ReminderBanner />
+      <UndoBar />
     </>
   );
 }

@@ -180,6 +180,103 @@ test('hatırlatıcılar kaydedilir, tarih kaldırılınca silinir', async () => 
   expect(updated.reminders).toEqual([]);
 });
 
+describe('geri alma', () => {
+  const todayKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  test('görev silme geri alınır ve depoya yazılır', async () => {
+    const task = await store().addTask({ title: 'x' });
+    await store().deleteTasks([task.id]);
+    expect(store().lastUndo.label).toBe('Görev silindi');
+
+    await store().undo();
+
+    expect(liveRecords(store().tasks).map(t => t.id)).toEqual([task.id]);
+    expect(liveRecords(await persisted('tasks'))).toHaveLength(1);
+    expect(store().lastUndo).toBeNull();
+  });
+
+  test('toplu silme tek seferde geri alınır', async () => {
+    const a = await store().addTask({ title: 'a' });
+    const b = await store().addTask({ title: 'b' });
+    await store().deleteTasks([a.id, b.id]);
+    expect(store().lastUndo.label).toBe('2 görev silindi');
+    await store().undo();
+    expect(liveRecords(store().tasks)).toHaveLength(2);
+  });
+
+  test('tamamlama geri alınınca tekrardan oluşan görev de silinir', async () => {
+    const task = await store().addTask({ title: 'x', dueDate: todayKey(), recurrence: { unit: 'day' } });
+    await store().toggleTask(task.id);
+    expect(liveRecords(store().tasks)).toHaveLength(2);
+
+    await store().undo();
+
+    const live = liveRecords(store().tasks);
+    expect(live.map(t => t.id)).toEqual([task.id]);
+    expect(live[0]).toMatchObject({ completedAt: null, nextTaskId: null });
+  });
+
+  test('kategori silme geri alınınca görevler eski kategoriye döner', async () => {
+    const work = await store().addCategory({ name: 'İş' });
+    const task = await store().addTask({ title: 'x', categoryId: work.id });
+    await store().deleteCategory(work.id);
+    expect(store().lastUndo.label).toBe('"İş" kategorisi silindi');
+
+    await store().undo();
+
+    expect(liveRecords(store().categories).map(c => c.id)).toContain(work.id);
+    expect(store().tasks.find(t => t.id === task.id).categoryId).toBe(work.id);
+  });
+
+  test('etiket silme geri alınınca bağlar geri gelir', async () => {
+    const tag = await store().findOrCreateTag('acil');
+    const task = await store().addTask({ title: 'x', tagIds: [tag.id] });
+    await store().deleteTag(tag.id);
+    await store().undo();
+    expect(liveRecords(store().tags)).toHaveLength(1);
+    expect(liveRecords(store().taskTags).map(l => [l.taskId, l.tagId])).toEqual([[task.id, tag.id]]);
+  });
+
+  test('geri alınan kayıtlar yeni updatedAt alır', async () => {
+    const task = await store().addTask({ title: 'x' });
+    await store().deleteTasks([task.id]);
+    const deleted = store().tasks[0];
+    await new Promise(r => setTimeout(r, 5));
+    await store().undo();
+    expect(store().tasks[0].updatedAt > deleted.updatedAt).toBe(true);
+  });
+
+  test('aynı kaydı değiştiren sonraki düzenleme geri almayı iptal eder', async () => {
+    const task = await store().addTask({ title: 'x', dueDate: todayKey() });
+    await store().toggleTask(task.id);
+    await store().updateTask(task.id, { title: 'yeni' });
+    expect(store().lastUndo).toBeNull();
+  });
+
+  test('başka kayda dokunan düzenleme geri almayı korur', async () => {
+    const a = await store().addTask({ title: 'a' });
+    const b = await store().addTask({ title: 'b' });
+    await store().deleteTasks([a.id]);
+    await store().updateTask(b.id, { title: 'b2' });
+    expect(store().lastUndo).not.toBeNull();
+  });
+
+  test('yeni işlem öncekinin yerini alır; dismissUndo yalnızca kendi kimliğini kapatır', async () => {
+    const a = await store().addTask({ title: 'a' });
+    const b = await store().addTask({ title: 'b' });
+    await store().deleteTasks([a.id]);
+    const first = store().lastUndo.id;
+    await store().deleteTasks([b.id]);
+    store().dismissUndo(first);
+    expect(store().lastUndo).not.toBeNull();
+    store().dismissUndo(store().lastUndo.id);
+    expect(store().lastUndo).toBeNull();
+  });
+});
+
 describe('kategoriler', () => {
   test('Gelen Kutusu silinemez ama yeniden adlandırılabilir', async () => {
     await expect(store().deleteCategory(INBOX_ID)).rejects.toThrow('silinemez');

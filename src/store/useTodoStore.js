@@ -15,6 +15,8 @@ import { isValidTime } from '../domain/dates';
 import * as models from '../domain/models';
 import { strings } from '../strings';
 
+const u = strings.undo;
+
 const REPOSITORIES = {
   tasks: taskRepository,
   categories: categoryRepository,
@@ -41,17 +43,38 @@ export const initialState = {
   tags: [],
   taskTags: [],
   settings: { defaultReminderTime: DEFAULT_REMINDER_TIME },
+  // Son geri alınabilir işlem: { id, label, snapshot: { [collection]: [{ id, prev }] } }
+  // prev null ise kayıt o işlemde oluşturulmuştur (geri almada silinir).
+  lastUndo: null,
 };
+
+let undoSeq = 0;
 
 export const useTodoStore = create((set, get) => {
   // Değişiklikleri önce belleğe (arayüz hemen güncellenir), sonra depoya yazar.
-  async function commit(changes) {
+  // undoLabel verilirse değişen kayıtların önceki hâli geri alma için saklanır;
+  // verilmezse ve değişiklik saklanan kayıtlardan birine dokunuyorsa geri alma
+  // iptal edilir (sonraki bir düzenlemenin üzerine yazılmasın).
+  async function commit(changes, undoLabel = null) {
     set(state => {
       const next = {};
+      let lastUndo = state.lastUndo;
+      if (undoLabel) {
+        const snapshot = {};
+        for (const [collection, records] of Object.entries(changes)) {
+          snapshot[collection] = records.map(r => ({
+            id: r.id,
+            prev: state[collection].find(x => x.id === r.id) ?? null,
+          }));
+        }
+        lastUndo = { id: ++undoSeq, label: undoLabel, snapshot };
+      } else if (lastUndo && touchesSnapshot(lastUndo.snapshot, changes)) {
+        lastUndo = null;
+      }
       for (const [collection, records] of Object.entries(changes)) {
         next[collection] = mergeById(state[collection], records);
       }
-      return next;
+      return { ...next, lastUndo };
     });
     try {
       await Promise.all(
@@ -64,6 +87,12 @@ export const useTodoStore = create((set, get) => {
       set({ error: e.message });
       throw e;
     }
+  }
+
+  function touchesSnapshot(snapshot, changes) {
+    return Object.entries(changes).some(([collection, records]) =>
+      records.some(r => snapshot[collection]?.some(entry => entry.id === r.id)),
+    );
   }
 
   function findAlive(collection, id) {
@@ -162,13 +191,37 @@ export const useTodoStore = create((set, get) => {
         }
       }
 
-      await commit({ tasks, taskTags });
+      await commit({ tasks, taskTags }, task.completedAt ? u.taskCompleted : u.taskReopened);
       return task;
     },
 
     async deleteTasks(ids) {
+      if (ids.length === 0) return;
       const tasks = ids.map(id => models.softDelete(findAlive('tasks', id)));
-      await commit({ tasks });
+      await commit({ tasks }, u.tasksDeleted(ids.length));
+    },
+
+    // Son işlemi geri alır: kayıtlar önceki hâline döner, o işlemde oluşanlar silinir.
+    async undo() {
+      const { lastUndo } = get();
+      if (!lastUndo) return;
+      const now = new Date();
+      const changes = {};
+      for (const [collection, entries] of Object.entries(lastUndo.snapshot)) {
+        changes[collection] = entries
+          .map(({ id, prev }) => {
+            if (prev) return { ...prev, updatedAt: now.toISOString() };
+            const current = get()[collection].find(r => r.id === id);
+            return current ? models.softDelete(current, now) : null;
+          })
+          .filter(Boolean);
+      }
+      set({ lastUndo: null });
+      await commit(changes);
+    },
+
+    dismissUndo(id) {
+      if (get().lastUndo?.id === id) set({ lastUndo: null });
     },
 
     async setTaskTags(taskId, tagIds) {
@@ -210,7 +263,7 @@ export const useTodoStore = create((set, get) => {
       const tasks = liveRecords(get().tasks)
         .filter(t => t.categoryId === id)
         .map(t => models.updateTask(t, { categoryId: INBOX_ID }));
-      await commit({ categories: [models.softDelete(category)], tasks });
+      await commit({ categories: [models.softDelete(category)], tasks }, u.categoryDeleted(category.name));
     },
 
     // --- Etiketler ---
@@ -246,7 +299,7 @@ export const useTodoStore = create((set, get) => {
       const links = liveRecords(get().taskTags)
         .filter(l => l.tagId === id)
         .map(l => models.softDelete(l));
-      await commit({ tags: [models.softDelete(tag)], taskTags: links });
+      await commit({ tags: [models.softDelete(tag)], taskTags: links }, u.tagDeleted(tag.name));
     },
   };
 });

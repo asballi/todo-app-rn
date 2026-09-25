@@ -101,7 +101,6 @@ export const strings = {
     markDone: 'Tamamlandı olarak işaretle',
     markUndone: 'Tamamlanmadı olarak işaretle',
     delete: 'Görevi sil',
-    deleteConfirm: title => `"${title}" silinsin mi?`,
   },
 
   taskForm: {
@@ -127,7 +126,6 @@ export const strings = {
   completed: {
     title: n => `Tamamlananlar (${n})`,
     clear: 'Tamamlananları sil',
-    clearConfirm: n => `${n} tamamlanmış görev silinsin mi?`,
   },
 
   priority: {
@@ -153,6 +151,16 @@ export const strings = {
     hint: 'Aramak için yaz veya filtre seç',
     noResults: 'Sonuç bulunamadı',
     resultCount: n => `${n} sonuç`,
+  },
+
+  undo: {
+    action: 'Geri al',
+    dismiss: 'Kapat',
+    taskCompleted: 'Görev tamamlandı',
+    taskReopened: 'Görev yeniden açıldı',
+    tasksDeleted: n => (n === 1 ? 'Görev silindi' : `${n} görev silindi`),
+    categoryDeleted: name => `"${name}" kategorisi silindi`,
+    tagDeleted: name => `#${name} etiketi silindi`,
   },
 
   checklist: {

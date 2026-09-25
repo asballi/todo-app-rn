@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import TaskRows from './TaskRows';
-import { confirm, showError } from './confirm';
+import { showError } from './confirm';
 import { useTodoStore } from '../store/useTodoStore';
 import { colors } from '../theme';
 import { strings } from '../strings';
@@ -12,13 +12,8 @@ export default function CompletedSection({ tasks }) {
   const [open, setOpen] = useState(false);
   if (tasks.length === 0) return null;
 
-  async function clear() {
-    const ok = await confirm({
-      title: strings.completed.clearConfirm(tasks.length),
-      confirmText: strings.common.delete,
-      destructive: true,
-    });
-    if (!ok) return;
+  // Onay sorulmaz; "Geri al" şeridi çıkar.
+  function clear() {
     useTodoStore.getState().deleteTasks(tasks.map(t => t.id)).catch(showError);
   }
 

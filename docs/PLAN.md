@@ -322,7 +322,7 @@ Task {
 
 ### v3 uygulama adımları
 
-1. **A:** geri alma
+1. ✅ **A:** geri alma — `commit(changes, undoLabel)` değişen kayıtların önceki hâlini `lastUndo` içinde saklar; `undo()` bunları yeni `updatedAt` ile geri yazar, o işlemde oluşan kayıtları siler. Sonraki bir düzenleme aynı kayda dokunursa geri alma iptal edilir. `UndoBar` sekme çubuğunun üstünde.
 2. **C:** otomatik kaydetme
 3. **E:** akıllı hızlı ekleme
 4. **F:** dışa / içe aktarma
