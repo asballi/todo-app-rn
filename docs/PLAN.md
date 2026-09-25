@@ -269,10 +269,71 @@ Task {
 
 **v2 tamamlandı.**
 
+## v3 — Kullanım kolaylığı
+
+### Kararlar
+
+| # | Konu | Karar |
+|---|------|-------|
+| W1 | Kapsam ve sıra | A Geri alma → C Otomatik kaydetme → E Akıllı hızlı ekleme → F Dışa/içe aktarma → D Karanlık mod → B Kaydırma; ayrıca G (etiket filtresinde VEYA) ve H ("Önemli" listesi). İstatistikler, web kenar çubuğu ve kontrol listesi sürükle-bırak v4 sonrasına |
+| W2 | Geri alma | Tek seviyeli, 5 sn'lik alt şerit; yalnızca son işlem |
+| W3 | Otomatik kaydetme | Görev detayında tam otomatik; "Kaydet" butonu kalkar |
+| W4 | Akıllı hızlı ekleme | İşaretler (`#`, `@`, `!`) + Türkçe tarih/saat ifadeleri |
+| W5 | Dışa/içe aktarma | JSON; içe aktarma kayıt kimliğine göre birleştirir, en son güncellenen kazanır |
+| W6 | Tema | Ayarlar'da Sistem (varsayılan) · Açık · Koyu |
+| W7 | Kaydırma | Yalnızca mobilde (sağa: tamamla, sola: sil); web'de üzerine gelince sil butonu |
+
+### Kurallar
+
+**A — Geri alma**
+- Kapsam: görev silme, tamamlananları toplu silme, tamamlama (tekrarın oluşturduğu sonraki görev dahil), kategori silme (görevler eski kategorisine döner), etiket silme (bağlar geri gelir), içe aktarma.
+- Store her işlemde değiştirdiği kayıtların önceki hâlini saklar; "Geri al" bunları tek seferde geri yazar (yeni `updatedAt` ile).
+- Yeni işlem önceki şeridi kapatır. Görev silme ve toplu silmede onay sorulmaz; kategori/etiket silmede onay kalır.
+- Form alanı düzenlemeleri geri alınmaz.
+
+**C — Otomatik kaydetme**
+- Çip, tarih, saat, kontrol listesi işareti hemen; başlık/not/madde metni yazmayı bıraktıktan 0,5 sn sonra; ekrandan çıkarken bekleyen değişiklik hemen kaydedilir.
+- Boş başlık kaydedilmez: alan altında uyarı, son geçerli başlık korunur.
+- Başlıkta "Kaydedildi" göstergesi. Yeni görev formu "Oluştur" ile kalır.
+
+**E — Akıllı hızlı ekleme**
+- `#etiket` (yoksa oluşturulur), `@kategori` (yalnızca var olanla eşleşir; harf/aksan duyarsız), `!1`–`!3` / `!düşük` `!orta` `!yüksek`.
+- Tarih: bugün, yarın, öbür gün, haftaya (+7), gün adları (bugünden sonraki ilk), "5 ekim" (geçmişse gelecek yıl). Saat: "15:00", "15.30", "saat 15"; tarihsiz saat → bugün.
+- Tanınan ifadeler başlıktan çıkarılır; başlık boş kalırsa görev oluşturulmaz.
+- Yazarken altta önizleme çipleri. Yazılan değerler ekran varsayılanlarının üzerine yazar. Yalnızca hızlı ekleme satırlarında.
+
+**F — Dışa / içe aktarma**
+- Dosya: `{ app, schemaVersion, exportedAt, data: { tasks, categories, tags, taskTags, settings } }`, silinmiş kayıtlar dahil.
+- İçe aktarma: kimliğe göre birleştirme, `updatedAt` daha yeni olan kazanır. Önce özet + onay. Bozuk ya da daha yeni sürümden dosya → hiçbir şey değişmez. Eski sürüm dosyaları güncel biçime çevrilir. Geri alınabilir.
+- Ayarlar → "Yedekleme". Web: indir / dosya seç. Mobil: `expo-file-system`, `expo-sharing`, `expo-document-picker`.
+
+**D — Karanlık mod**
+- `settings.theme`: `'system' | 'light' | 'dark'`. İki renk seti; ekranlar `useTheme()` ile renk alır.
+- Kategori/etiket/öncelik renkleri iki temada aynı. Başlıklar, sekme çubuğu, durum çubuğu, tarih seçici ve şerit temaya uyar. Kontrast WCAG AA ile ölçülür.
+
+**B — Kaydırma**
+- `react-native-gesture-handler` + `react-native-reanimated` (SDK 54 sürümleri), yalnızca mobil dosyada; web paketine girmez.
+- Satırın ~1/3'ü kadar kaydırınca işlem; arkada renkli alan ve simge. Tamamlanmış görev sağa kaydırılınca geri açılır.
+- Ekran okuyucu için satırda "Tamamla" ve "Sil" eylemleri.
+
+**G / H**
+- G: aramada etiket filtresi için "Hepsi / Herhangi biri" seçimi (varsayılan Hepsi).
+- H: "Önemli" akıllı listesi (yüksek öncelikli, tamamlanmamış), Listeler'de Gecikmiş'in altında.
+
+### v3 uygulama adımları
+
+1. **A:** geri alma
+2. **C:** otomatik kaydetme
+3. **E:** akıllı hızlı ekleme
+4. **F:** dışa / içe aktarma
+5. **G + H:** etiket filtresinde VEYA, "Önemli" listesi
+6. **D:** karanlık mod
+7. **B:** kaydırma hareketleri
+
 ## Sonraki sürümler
 
-- **v3:** kaydırma hareketleri, geri alma (Undo), karanlık mod, `#etiket` / doğal dil ile hızlı ekleme, etiket filtresinde VEYA, dışa/içe aktarma, istatistikler, geniş web ekranında kenar çubuğu, "Önemli" akıllı listesi.
 - **v4:** hesap + Supabase senkronizasyonu.
+- **v4 sonrası:** istatistikler, geniş web ekranında kenar çubuğu, kontrol listesinde sürükle-bırak.
 - **Sonraya bırakılanlar (tüm sürümlerden sonra):** tam alt görevler (kendi tarihi/etiketi olan, listelerde görünebilen alt görevler).
 
 ## Notlar
