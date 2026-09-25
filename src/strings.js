@@ -115,6 +115,8 @@ export const strings = {
     category: 'Kategori',
     tags: 'Etiketler',
     priority: 'Öncelik',
+    saving: 'Kaydediliyor…',
+    saved: 'Kaydedildi',
   },
 
   quickAdd: {

@@ -323,7 +323,7 @@ Task {
 ### v3 uygulama adımları
 
 1. ✅ **A:** geri alma — `commit(changes, undoLabel)` değişen kayıtların önceki hâlini `lastUndo` içinde saklar; `undo()` bunları yeni `updatedAt` ile geri yazar, o işlemde oluşan kayıtları siler. Sonraki bir düzenleme aynı kayda dokunursa geri alma iptal edilir. `UndoBar` sekme çubuğunun üstünde.
-2. **C:** otomatik kaydetme
+2. ✅ **C:** otomatik kaydetme — `TaskForm` `autoSave` modu: seçimler hemen, metinler 0,5 sn sonra, ekrandan çıkarken hemen; boş başlıkta son geçerli başlık. Tamamla/Sil butonları önce bekleyen kaydı yapar. Bilinen sınır: web'de sekme 0,5 sn içinde kapatılırsa son yazılan metin kaydedilmeyebilir.
 3. **E:** akıllı hızlı ekleme
 4. **F:** dışa / içe aktarma
 5. **G + H:** etiket filtresinde VEYA, "Önemli" listesi

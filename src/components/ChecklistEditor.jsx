@@ -12,7 +12,9 @@ const t = strings.checklist;
 export default function ChecklistEditor({ value, onChange }) {
   const [draft, setDraft] = useState('');
 
-  const update = (id, changes) => onChange(value.map(item => (item.id === id ? { ...item, ...changes } : item)));
+  // onChange ikinci argümanı: { typing: true } metin düzenlemesidir (gecikmeli kayıt için).
+  const update = (id, changes, meta) =>
+    onChange(value.map(item => (item.id === id ? { ...item, ...changes } : item)), meta);
 
   function add() {
     if (!draft.trim()) return;
@@ -38,7 +40,7 @@ export default function ChecklistEditor({ value, onChange }) {
           <TextInput
             style={[styles.input, item.done && styles.inputDone]}
             value={item.title}
-            onChangeText={title => update(item.id, { title })}
+            onChangeText={title => update(item.id, { title }, { typing: true })}
             accessibilityLabel={t.itemLabel(item.title)}
           />
           <TouchableOpacity

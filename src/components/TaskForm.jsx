@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import Chip from './Chip';
 import DateInput from './DateInput';
@@ -11,13 +11,20 @@ import ReminderPicker from './ReminderPicker';
 import { strings } from '../strings';
 import { quickDueDates } from '../domain/dates';
 import { colors } from '../theme';
+import { showError } from './confirm';
 
 const DEFAULT_TIME = '09:00';
+const TEXT_SAVE_DELAY = 500;
 const f = strings.taskForm;
 
-// Yeni görev ve görev detayı aynı formu kullanır. `children` formun altına
-// eklenir (ör. detay ekranındaki tamamla/sil butonları).
-export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, children }) {
+// Yeni görev ve görev detayı aynı formu kullanır.
+// - onSubmit + submitLabel: "Oluştur" butonlu form (yeni görev).
+// - autoSave: butonsuz, her değişiklik kendiliğinden kaydedilir (görev detayı).
+//   Seçimler hemen, yazılan metinler 0,5 sn sonra, ekrandan çıkarken bekleyen
+//   değişiklik hemen kaydedilir. Boş başlık kaydedilmez; son geçerli başlık korunur.
+// `children` formun altına eklenir; fonksiyonsa { flush } alır (bekleyen
+// kaydı hemen yapmak için, ör. tamamla/sil butonlarından önce).
+export default function TaskForm({ initial, submitLabel, onSubmit, autoSave, autoFocus, children }) {
   const [title, setTitle] = useState(initial.title);
   const [notes, setNotes] = useState(initial.notes);
   const [categoryId, setCategoryId] = useState(initial.categoryId);
@@ -29,10 +36,69 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
   const [recurrence, setRecurrence] = useState(initial.recurrence ?? null);
   const [reminders, setReminders] = useState(initial.reminders ?? []);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // null | 'saving' | 'saved'
 
   const canSave = title.trim().length > 0 && !saving;
+  const titleMissing = !!autoSave && !title.trim();
+  const values = { title, notes, categoryId, dueDate, dueTime, priority, tagIds, checklist, recurrence, reminders };
+  const valuesKey = JSON.stringify(values);
+
+  // --- Otomatik kaydetme ---
+  const latest = useRef(values);
+  latest.current = values;
+  const lastValidTitle = useRef(initial.title);
+  if (title.trim()) lastValidTitle.current = title;
+  const lastSavedKey = useRef(valuesKey);
+  const nextDelay = useRef(0);
+  const timer = useRef(null);
+
+  // Metin alanları gecikmeli, diğer her şey hemen kaydedilir.
+  const typed = setter => value => {
+    nextDelay.current = TEXT_SAVE_DELAY;
+    setter(value);
+  };
+  const picked = setter => value => {
+    nextDelay.current = 0;
+    setter(value);
+  };
+
+  async function flush() {
+    clearTimeout(timer.current);
+    timer.current = null;
+    if (!autoSave) return;
+    const current = latest.current;
+    const toSave = { ...current, title: current.title.trim() ? current.title : lastValidTitle.current };
+    const key = JSON.stringify(toSave);
+    if (key === lastSavedKey.current) return;
+    lastSavedKey.current = key;
+    setSaveStatus('saving');
+    try {
+      await autoSave(toSave);
+      setSaveStatus('saved');
+    } catch (e) {
+      setSaveStatus(null);
+      lastSavedKey.current = null;
+      showError(e);
+    }
+  }
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+
+  // Yalnızca form değerleri değişince zamanlanır (autoSave her render'da yeni
+  // bir fonksiyon olabilir; en güncelini flushRef üzerinden kullanırız).
+  useEffect(() => {
+    if (!autoSave) return;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => flushRef.current(), nextDelay.current);
+  }, [valuesKey]);
+
+  // Ekrandan çıkarken bekleyen değişikliği kaydet.
+  useEffect(() => () => {
+    if (timer.current) flushRef.current();
+  }, []);
 
   function changeDueDate(value) {
+    nextDelay.current = 0;
     setDueDate(value);
     // Saat ve tekrar bir tarihe bağlıdır.
     if (!value) {
@@ -56,11 +122,16 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {autoSave && (
+        <Text style={styles.status} accessibilityLiveRegion="polite" aria-live="polite">
+          {saveStatus === 'saving' ? f.saving : saveStatus === 'saved' ? f.saved : ' '}
+        </Text>
+      )}
       <View style={styles.card}>
         <TextInput
           style={styles.title}
           value={title}
-          onChangeText={setTitle}
+          onChangeText={typed(setTitle)}
           placeholder={f.titlePlaceholder}
           placeholderTextColor="#bbb"
           autoFocus={autoFocus}
@@ -69,16 +140,22 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
         <TextInput
           style={styles.notes}
           value={notes}
-          onChangeText={setNotes}
+          onChangeText={typed(setNotes)}
           placeholder={f.notesPlaceholder}
           placeholderTextColor="#bbb"
           multiline
           accessibilityLabel={f.notesLabel}
         />
       </View>
+      {titleMissing && (
+        <Text style={styles.error}>{strings.errors.required(strings.errors.fields.taskTitle)}</Text>
+      )}
 
       <Text style={styles.label}>{strings.checklist.title}</Text>
-      <ChecklistEditor value={checklist} onChange={setChecklist} />
+      <ChecklistEditor
+        value={checklist}
+        onChange={(next, { typing } = {}) => (typing ? typed : picked)(setChecklist)(next)}
+      />
 
       <Text style={styles.label}>{f.date}</Text>
       <View style={styles.row}>
@@ -97,11 +174,11 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
           <DateInput mode="date" value={dueDate} onChange={changeDueDate} />
           {dueTime ? (
             <>
-              <DateInput mode="time" value={dueTime} onChange={setDueTime} />
-              <Chip label={f.noTime} icon="x" onPress={() => setDueTime(null)} />
+              <DateInput mode="time" value={dueTime} onChange={picked(setDueTime)} />
+              <Chip label={f.noTime} icon="x" onPress={() => picked(setDueTime)(null)} />
             </>
           ) : (
-            <Chip label={f.addTime} icon="clock" onPress={() => setDueTime(DEFAULT_TIME)} />
+            <Chip label={f.addTime} icon="clock" onPress={() => picked(setDueTime)(DEFAULT_TIME)} />
           )}
         </View>
       )}
@@ -109,36 +186,49 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
       {dueDate && (
         <>
           <Text style={styles.label}>{strings.recurrence.title}</Text>
-          <RecurrencePicker value={recurrence} dueDate={dueDate} onChange={setRecurrence} />
+          <RecurrencePicker value={recurrence} dueDate={dueDate} onChange={picked(setRecurrence)} />
 
           <Text style={styles.label}>{strings.reminders.title}</Text>
-          <ReminderPicker value={reminders} dueTime={dueTime} onChange={setReminders} />
+          <ReminderPicker value={reminders} dueTime={dueTime} onChange={picked(setReminders)} />
         </>
       )}
 
       <Text style={styles.label}>{f.category}</Text>
-      <CategoryPicker value={categoryId} onChange={setCategoryId} />
+      <CategoryPicker value={categoryId} onChange={picked(setCategoryId)} />
 
       <Text style={styles.label}>{f.tags}</Text>
-      <TagPicker value={tagIds} onChange={setTagIds} />
+      <TagPicker value={tagIds} onChange={picked(setTagIds)} />
 
       <Text style={styles.label}>{f.priority}</Text>
-      <PriorityPicker value={priority} onChange={setPriority} />
+      <PriorityPicker value={priority} onChange={picked(setPriority)} />
 
-      <TouchableOpacity
-        style={[styles.submit, !canSave && styles.disabled]}
-        onPress={submit}
-        disabled={!canSave}
-      >
-        <Text style={styles.submitText}>{submitLabel}</Text>
-      </TouchableOpacity>
+      {!autoSave && (
+        <TouchableOpacity
+          style={[styles.submit, !canSave && styles.disabled]}
+          onPress={submit}
+          disabled={!canSave}
+        >
+          <Text style={styles.submitText}>{submitLabel}</Text>
+        </TouchableOpacity>
+      )}
 
-      {children}
+      {typeof children === 'function' ? children({ flush }) : children}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  status: {
+    alignSelf: 'flex-end',
+    fontSize: 12,
+    color: colors.muted,
+    marginBottom: -4,
+  },
+  error: {
+    fontSize: 13,
+    color: colors.danger,
+    paddingHorizontal: 4,
+  },
   content: {
     padding: 20,
     gap: 12,

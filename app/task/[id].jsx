@@ -27,8 +27,10 @@ export default function TaskDetailScreen() {
   const close = () => goBack(router, '/today');
   const done = !!task.completedAt;
 
-  async function run(action) {
+  // Bekleyen otomatik kaydı yapıp işlemi çalıştırır, sonra ekranı kapatır.
+  async function run(flush, action) {
     try {
+      await flush();
       await action();
       close();
     } catch (e) {
@@ -36,29 +38,38 @@ export default function TaskDetailScreen() {
     }
   }
 
-  // Onay sorulmaz; liste ekranında "Geri al" şeridi çıkar.
-  function remove() {
-    run(() => useTodoStore.getState().deleteTasks([id]));
+  // Görev bu arada silindiyse (ör. başka bir ekrandan) kaydetmeye çalışma.
+  function autoSave(values) {
+    const current = useTodoStore.getState().tasks.find(t => t.id === id);
+    if (!current || !isAlive(current)) return Promise.resolve();
+    return useTodoStore.getState().updateTask(id, values);
   }
 
   return (
     <>
       <Stack.Screen options={{ title: strings.task.detailTitle }} />
-      <TaskForm
-        initial={task}
-        submitLabel={strings.common.save}
-        onSubmit={values => run(() => useTodoStore.getState().updateTask(id, values))}
-      >
-        <TouchableOpacity style={styles.action} onPress={() => run(() => useTodoStore.getState().toggleTask(id))}>
-          <Feather name={done ? 'rotate-ccw' : 'check-circle'} size={16} color={colors.primary} />
-          <Text style={styles.actionText}>
-            {done ? strings.task.markUndone : strings.task.markDone}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.action} onPress={remove}>
-          <Feather name="trash-2" size={16} color={colors.danger} />
-          <Text style={[styles.actionText, { color: colors.danger }]}>{strings.task.delete}</Text>
-        </TouchableOpacity>
+      <TaskForm initial={task} autoSave={autoSave}>
+        {({ flush }) => (
+          <>
+            <TouchableOpacity
+              style={styles.action}
+              onPress={() => run(flush, () => useTodoStore.getState().toggleTask(id))}
+            >
+              <Feather name={done ? 'rotate-ccw' : 'check-circle'} size={16} color={colors.primary} />
+              <Text style={styles.actionText}>
+                {done ? strings.task.markUndone : strings.task.markDone}
+              </Text>
+            </TouchableOpacity>
+            {/* Onay sorulmaz; liste ekranında "Geri al" şeridi çıkar. */}
+            <TouchableOpacity
+              style={styles.action}
+              onPress={() => run(flush, () => useTodoStore.getState().deleteTasks([id]))}
+            >
+              <Feather name="trash-2" size={16} color={colors.danger} />
+              <Text style={[styles.actionText, { color: colors.danger }]}>{strings.task.delete}</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </TaskForm>
     </>
   );
