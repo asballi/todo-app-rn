@@ -72,9 +72,16 @@ test('arama: Türkçe karakter duyarsız, filtreler, tamamlananlar ayrı', async
     await expect(text(page, 'Filtreler (2)')).toBeVisible();
   });
 
-  await test.step('filtreleri temizle', async () => {
+  await test.step('etiketler "Herhangi biri" modunda VEYA mantığıyla', async () => {
+    await page.getByLabel('Etiket eşleşmesi: Herhangi biri').click();
+    await expect.poll(() => results(page)).toEqual(['IŞIK faturası', 'Müşteriyi ara']);
+    await expect(text(page, 'Filtreler (2)')).toBeVisible(); // mod bir filtre sayılmaz
+  });
+
+  await test.step('filtreleri temizle (eşleşme modu da Hepsi\'ne döner)', async () => {
     await text(page, 'Filtreleri temizle').click();
     await expect(text(page, 'Aramak için yaz veya filtre seç')).toBeVisible();
+    await expect(page.getByLabel('Etiket eşleşmesi: Hepsi')).toHaveAttribute('aria-checked', 'true');
   });
 
   await test.step('öncelikler VEYA, sorguyla birlikte', async () => {

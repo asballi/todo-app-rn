@@ -39,6 +39,7 @@ export default function ListsLayout() {
       <Stack.Screen name="category/[id]" options={{ title: '' }} />
       <Stack.Screen name="tag/[id]" options={{ title: '' }} />
       <Stack.Screen name="overdue" options={{ title: strings.lists.overdue }} />
+      <Stack.Screen name="important" options={{ title: strings.lists.important }} />
     </Stack>
   );
 }

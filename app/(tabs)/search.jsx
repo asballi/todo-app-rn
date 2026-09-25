@@ -32,12 +32,13 @@ export default function SearchScreen() {
   const [categoryId, setCategoryId] = useState(null);
   const [tagIds, setTagIds] = useState([]);
   const [priorities, setPriorities] = useState([]);
+  const [tagMode, setTagMode] = useState('all'); // 'all' (VE) | 'any' (VEYA)
   const [showFilters, setShowFilters] = useState(false);
 
   // Silinen kategori/etiket seçili kalırsa filtre sessizce boş sonuç vermesin.
   const liveCategoryId = categories.some(c => c.id === categoryId) ? categoryId : null;
   const liveTagIds = tagIds.filter(id => tags.some(t => t.id === id));
-  const criteria = { query, categoryId: liveCategoryId, tagIds: liveTagIds, priorities };
+  const criteria = { query, categoryId: liveCategoryId, tagIds: liveTagIds, tagMode, priorities };
   const filterCount = (liveCategoryId ? 1 : 0) + liveTagIds.length + priorities.length;
   const active = hasSearchCriteria(criteria);
 
@@ -49,6 +50,7 @@ export default function SearchScreen() {
   function clearFilters() {
     setCategoryId(null);
     setTagIds([]);
+    setTagMode('all');
     setPriorities([]);
   }
 
@@ -107,7 +109,20 @@ export default function SearchScreen() {
             ))}
           </View>
 
-          <Text style={styles.label}>{s.tagsAll}</Text>
+          <Text style={styles.label}>{s.tags}</Text>
+          {tags.length > 1 && (
+            <View style={styles.chips}>
+              {[['all', s.tagModeAll], ['any', s.tagModeAny]].map(([mode, label]) => (
+                <Chip
+                  key={mode}
+                  label={label}
+                  selected={tagMode === mode}
+                  onPress={() => setTagMode(mode)}
+                  accessibilityLabel={s.tagModeLabel(label)}
+                />
+              ))}
+            </View>
+          )}
           <View style={styles.chips}>
             {tags.length === 0 && <Text style={styles.none}>{s.noTags}</Text>}
             {tags.map(tag => (

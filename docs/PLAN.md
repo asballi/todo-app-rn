@@ -326,7 +326,7 @@ Task {
 2. ✅ **C:** otomatik kaydetme — `TaskForm` `autoSave` modu: seçimler hemen, metinler 0,5 sn sonra, ekrandan çıkarken hemen; boş başlıkta son geçerli başlık. Tamamla/Sil butonları önce bekleyen kaydı yapar. Bilinen sınır: web'de sekme 0,5 sn içinde kapatılırsa son yazılan metin kaydedilmeyebilir.
 3. ✅ **E:** akıllı hızlı ekleme — `src/domain/quickParse.js` (30 test); tanınan kelimeler `strings.quickParse` ve `strings.dates` içinde. Her türün yalnızca ilki kullanılır, sonrakiler başlıkta kalır. Ayrıntı butonu ayrıştırılan değerleri (saat ve öncelik dahil) forma taşır. Bilinen belirsizlik: başlıkta geçen gün adları ("Cuma namazı", "pazar alışverişi") tarih olarak anlaşılır; önizleme bunu yazarken gösterir.
 4. ✅ **F:** dışa / içe aktarma — `src/data/backup.js` (oluştur / doğrula / birleştir, 13 test), platform dosya işlemleri `backupFile.web.js` / `backupFile.native.js`. Aynı adda farklı kimlikli etiketler mevcut etikete bağlanır, çift etiket bağı eklenmez. Onay özeti yalnızca görünen değişiklikleri sayar (silinmiş gelen yeni kayıtlar "eklenecek" sayılmaz; canlı kaydı silen güncelleme "silinecek" olarak gösterilir). Ayarlar dışa aktarılır ama içe aktarılmaz (cihaza özel tercih).
-5. **G + H:** etiket filtresinde VEYA, "Önemli" listesi
+5. ✅ **G + H:** etiket filtresinde VEYA, "Önemli" listesi — `searchTasks` `tagMode: 'all' | 'any'` alır; seçim en az 2 etiket varken görünür, filtre sayısına katılmaz, "Filtreleri temizle" Hepsi'ne döndürür. Önemli (`/lists/important`): yüksek öncelikli açık görevler; simge rengi Gecikmiş'ten ayrışan koyu amber (`colors.important`).
 6. **D:** karanlık mod
 7. **B:** kaydırma hareketleri
 

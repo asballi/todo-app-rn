@@ -1,4 +1,4 @@
-import { todayView, upcomingView, overdueTasks, splitCompleted } from '../filters';
+import { todayView, upcomingView, overdueTasks, splitCompleted, importantTasks } from '../filters';
 
 // Cuma 25 Eylül 2026, 10:00 (yerel saat)
 const NOW = new Date(2026, 8, 25, 10, 0);
@@ -103,4 +103,15 @@ test('splitCompleted sırayı koruyarak ayırır', () => {
   const { open, completed } = splitCompleted(tasks);
   expect(titles(open)).toEqual(['a', 'c']);
   expect(titles(completed)).toEqual(['b', 'd']);
+});
+
+test('importantTasks yalnızca açık, canlı ve yüksek öncelikli görevler', () => {
+  const tasks = [
+    task('yüksek', { priority: 3 }),
+    task('orta', { priority: 2 }),
+    task('yüksek ama bitti', { priority: 3, completedAt: 'x' }),
+    task('yüksek ama silindi', { priority: 3, deletedAt: 'x' }),
+    task('yüksek ve tarihli', { priority: 3, dueDate: '2026-09-26' }),
+  ];
+  expect(titles(importantTasks(tasks))).toEqual(['yüksek ve tarihli', 'yüksek']);
 });

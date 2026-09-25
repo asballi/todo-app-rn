@@ -7,6 +7,8 @@ export const colors = {
   border: '#e0e0e0',
   danger: '#e05c5c',
   tagDefault: '#8a8a9e',
+  // Önemli listesi (Gecikmiş'in kırmızısından ayrışsın; beyaz simgeyle ≥ 3:1)
+  important: '#d97706',
 };
 
 export const categoryColors = [

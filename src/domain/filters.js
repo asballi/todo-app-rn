@@ -101,6 +101,13 @@ export function upcomingView(tasks, now = new Date(), days = 7) {
   return { days: groups, completed: sortTasks(completed) };
 }
 
+// Önemli: yüksek öncelikli, tamamlanmamış görevler.
+export const IMPORTANT_PRIORITY = 3;
+
+export function importantTasks(tasks) {
+  return sortTasks(liveRecords(tasks).filter(t => !t.completedAt && t.priority === IMPORTANT_PRIORITY));
+}
+
 export function overdueTasks(tasks, now = new Date()) {
   return sortTasks(liveRecords(tasks).filter(t => isOverdue(t, now)));
 }
@@ -121,9 +128,13 @@ export function hasSearchCriteria({ query = '', categoryId = null, tagIds = [], 
 
 // Başlık, not ve kontrol listesi maddelerinde arama + filtreler.
 // Sorgudaki her kelime geçmelidir.
-// categoryId: tek kategori (null = hepsi); tagIds: hepsi olmalı (VE);
-// priorities: herhangi biri (VEYA, boş = hepsi).
-export function searchTasks(tasks, taskTags, { query = '', categoryId = null, tagIds = [], priorities = [] }) {
+// categoryId: tek kategori (null = hepsi); tagIds: tagMode 'all' ise hepsi (VE),
+// 'any' ise herhangi biri (VEYA); priorities: herhangi biri (VEYA, boş = hepsi).
+export function searchTasks(
+  tasks,
+  taskTags,
+  { query = '', categoryId = null, tagIds = [], tagMode = 'all', priorities = [] },
+) {
   const words = foldForSearch(query).split(/\s+/).filter(Boolean);
   let tagsOf = null;
   if (tagIds.length > 0) {
@@ -140,7 +151,8 @@ export function searchTasks(tasks, taskTags, { query = '', categoryId = null, ta
       if (priorities.length > 0 && !priorities.includes(task.priority)) return false;
       if (tagsOf) {
         const own = tagsOf.get(task.id);
-        if (!own || !tagIds.every(id => own.has(id))) return false;
+        const matches = tagMode === 'any' ? tagIds.some(id => own?.has(id)) : tagIds.every(id => own?.has(id));
+        if (!own || !matches) return false;
       }
       if (words.length > 0) {
         const items = (task.checklist ?? []).map(i => i.title).join(' ');

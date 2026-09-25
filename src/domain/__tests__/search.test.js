@@ -78,6 +78,14 @@ describe('filtreler', () => {
     expect(titles(searchTasks(tasks, links, { tagIds: ['phone'] }))).toEqual(['Müşteriyi ara']);
   });
 
+  test('etiketler "herhangi biri" modunda VEYA mantığıyla', () => {
+    expect(titles(searchTasks(tasks, links, { tagIds: ['urgent', 'phone'], tagMode: 'any' }))).toEqual([
+      'IŞIK faturası',
+      'Müşteriyi ara',
+    ]);
+    expect(titles(searchTasks(tasks, links, { tagIds: ['phone'], tagMode: 'any' }))).toEqual(['Müşteriyi ara']);
+  });
+
   test('öncelikler VEYA mantığıyla', () => {
     expect(titles(searchTasks(tasks, links, { priorities: [1, 3] }))).toEqual(['IŞIK faturası', 'Müşteriyi ara', 'Süt al']);
   });

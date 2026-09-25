@@ -9,6 +9,7 @@ import {
   sortTags,
   openTaskCountsByTag,
   overdueTasks,
+  importantTasks,
 } from '../../../src/domain/filters';
 import { ListRow, SectionHeader, listStyles } from '../../../src/components/ListRow';
 import { colors } from '../../../src/theme';
@@ -29,6 +30,7 @@ export default function ListsScreen() {
   const tagCounts = useMemo(() => openTaskCountsByTag(tasks, taskTags), [tasks, taskTags]);
   const now = useNow();
   const overdueCount = useMemo(() => overdueTasks(tasks, now).length, [tasks, now]);
+  const importantCount = useMemo(() => importantTasks(tasks).length, [tasks]);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -41,6 +43,13 @@ export default function ListsScreen() {
           name={l.overdue}
           count={overdueCount}
           onPress={() => router.push('/lists/overdue')}
+        />
+        <ListRow
+          icon="star"
+          color={colors.important}
+          name={l.important}
+          count={importantCount}
+          onPress={() => router.push('/lists/important')}
         />
       </View>
 
