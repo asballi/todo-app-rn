@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors, priorityColors } from '../theme';
 import { formatDueLabel, isOverdue } from '../domain/dates';
 import { strings } from '../strings';
+import { recurrenceLabel } from '../domain/recurrence';
 
 export default function TaskItem({ task, tags = [], onToggle, onPress }) {
   const done = !!task.completedAt;
@@ -34,13 +35,18 @@ export default function TaskItem({ task, tags = [], onToggle, onPress }) {
         <Text style={[styles.title, done && styles.titleDone]} numberOfLines={2}>
           {task.title}
         </Text>
-        {(dueLabel || tags.length > 0 || checklist.length > 0) && (
+        {(dueLabel || tags.length > 0 || checklist.length > 0 || task.recurrence) && (
           <View style={styles.meta}>
             {dueLabel && (
               <>
                 <Feather name="calendar" size={12} color={overdue ? colors.danger : colors.muted} />
                 <Text style={[styles.metaText, overdue && styles.overdue]}>{dueLabel}</Text>
               </>
+            )}
+            {task.recurrence && (
+              <View accessibilityLabel={strings.recurrence.repeats(recurrenceLabel(task.recurrence))}>
+                <Feather name="repeat" size={12} color={colors.muted} />
+              </View>
             )}
             {checklist.length > 0 && (
               <View

@@ -254,7 +254,8 @@ Task {
 
 1. ✅ **Kontrol listesi:** şema v3 + migration, `ChecklistEditor`, satırda ilerleme, aramada madde metni. Yeni metinler `src/strings.js` içinde.
    Kontrol listesi formun geri kalanı gibi "Kaydet" ile kaydedilir; kaydetmeden çıkılırsa değişiklikler kaybolur (otomatik kaydetme v3'te değerlendirilebilir).
-2. **Tekrarlayan görevler:** `nextOccurrence` (saf fonksiyon, kapsamlı testler), tamamlama/geri alma kuralları, `RecurrencePicker`, satırda simge.
+2. ✅ **Tekrarlayan görevler:** `nextDueDate` / `stepDate` (`src/domain/recurrence.js`, kapsamlı testler), tamamlama/geri alma kuralları, `RecurrencePicker`, satırda simge.
+   Haftalık gün seçiminde hafta Pazartesi başlar; "N haftada bir" kuralında seçili günler bitince N hafta sonrasının ilk seçili gününe geçilir. Kullanıcı bitiş tarihini değiştirirse aylık/yıllık serinin günü yeni tarihten alınır.
 3. **Hatırlatıcılar:** `ReminderPicker`, Ayarlar ekranı (varsayılan saat), bildirim zamanlayıcı (mobil `expo-notifications`, web Notification API + şerit), izin akışı, bildirime dokununca detay.
 4. **Metinleri dil dosyasına taşıma** (V5): davranış değişikliği olmadan, yalnızca metin taşıyan commit.
 

@@ -1,6 +1,7 @@
 import { INBOX_ID, newId, nowIso } from './ids';
 import { isValidDateKey, isValidTime } from './dates';
 import { tagKey } from './tags';
+import { normalizeRecurrence } from './recurrence';
 
 export const PRIORITIES = [0, 1, 2, 3];
 
@@ -54,6 +55,8 @@ function validateTaskFields(fields) {
   if (!task.dueDate) task.dueTime = null;
   if (!PRIORITIES.includes(task.priority)) throw new Error('Geçersiz öncelik');
   task.checklist = normalizeChecklist(task.checklist ?? []);
+  // Tekrar bir bitiş tarihine bağlıdır; tarih kalkınca tekrar da kalkar.
+  task.recurrence = normalizeRecurrence(task.recurrence ?? null, task.dueDate);
   return task;
 }
 
@@ -67,21 +70,46 @@ export function createTask(input, now = new Date()) {
     dueTime: input.dueTime ?? null,
     priority: input.priority ?? 0,
     completedAt: null,
-    reminders: [],
-    recurrence: null,
+    reminders: input.reminders ?? [],
+    recurrence: input.recurrence ?? null,
     nextTaskId: null,
     checklist: input.checklist ?? [],
   });
 }
 
-const EDITABLE_TASK_FIELDS = ['title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority', 'checklist'];
+const EDITABLE_TASK_FIELDS = [
+  'title', 'notes', 'categoryId', 'dueDate', 'dueTime', 'priority', 'checklist', 'recurrence',
+];
 
 export function updateTask(task, changes, now = new Date()) {
   const next = { ...task };
   for (const field of EDITABLE_TASK_FIELDS) {
     if (field in changes) next[field] = changes[field];
   }
+  // Kullanıcı tarihi değiştirirse aylık/yıllık serinin günü yeni tarihten alınır.
+  if (next.recurrence && next.dueDate !== task.dueDate) {
+    next.recurrence = { ...next.recurrence, monthDay: null };
+  }
   return { ...validateTaskFields(next), updatedAt: nowIso(now) };
+}
+
+// Tekrarlayan görev tamamlanınca oluşan sonraki görev: alanlar kopyalanır,
+// kontrol listesi işaretsiz ve yeni kimliklerle gelir.
+export function createNextOccurrence(task, dueDate, now = new Date()) {
+  return createTask(
+    {
+      title: task.title,
+      notes: task.notes,
+      categoryId: task.categoryId,
+      dueDate,
+      dueTime: task.dueTime,
+      priority: task.priority,
+      reminders: [...task.reminders],
+      recurrence: task.recurrence,
+      checklist: task.checklist.map(item => ({ title: item.title, done: false })),
+    },
+    now,
+  );
 }
 
 export function toggleTask(task, now = new Date()) {

@@ -6,6 +6,7 @@ import PriorityPicker from './PriorityPicker';
 import CategoryPicker from './CategoryPicker';
 import TagPicker from './TagPicker';
 import ChecklistEditor from './ChecklistEditor';
+import RecurrencePicker from './RecurrencePicker';
 import { strings } from '../strings';
 import { quickDueDates } from '../domain/dates';
 import { colors } from '../theme';
@@ -23,20 +24,25 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
   const [priority, setPriority] = useState(initial.priority);
   const [tagIds, setTagIds] = useState(initial.tagIds ?? []);
   const [checklist, setChecklist] = useState(initial.checklist ?? []);
+  const [recurrence, setRecurrence] = useState(initial.recurrence ?? null);
   const [saving, setSaving] = useState(false);
 
   const canSave = title.trim().length > 0 && !saving;
 
   function changeDueDate(value) {
     setDueDate(value);
-    if (!value) setDueTime(null);
+    // Saat ve tekrar bir tarihe bağlıdır.
+    if (!value) {
+      setDueTime(null);
+      setRecurrence(null);
+    }
   }
 
   async function submit() {
     if (!canSave) return;
     setSaving(true);
     try {
-      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority, tagIds, checklist });
+      await onSubmit({ title, notes, categoryId, dueDate, dueTime, priority, tagIds, checklist, recurrence });
     } finally {
       setSaving(false);
     }
@@ -92,6 +98,13 @@ export default function TaskForm({ initial, submitLabel, onSubmit, autoFocus, ch
             <Chip label="Saat ekle" icon="clock" onPress={() => setDueTime(DEFAULT_TIME)} />
           )}
         </View>
+      )}
+
+      {dueDate && (
+        <>
+          <Text style={styles.label}>{strings.recurrence.title}</Text>
+          <RecurrencePicker value={recurrence} dueDate={dueDate} onChange={setRecurrence} />
+        </>
       )}
 
       <Text style={styles.label}>Kategori</Text>

@@ -9,4 +9,17 @@ export const strings = {
     progress: (done, total) => `${done}/${total}`,
     progressLabel: (done, total) => `Kontrol listesi: ${done}/${total} tamamlandı`,
   },
+  recurrence: {
+    title: 'Tekrar',
+    none: 'Tekrar yok',
+    custom: 'Özel',
+    every: 'Her',
+    units: { day: 'gün', week: 'hafta', month: 'ay', year: 'yıl' },
+    decrease: 'Aralığı azalt',
+    increase: 'Aralığı artır',
+    intervalLabel: n => `Aralık: ${n}`,
+    fromDue: 'Bitiş tarihinden say',
+    fromCompletion: 'Tamamlanınca say',
+    repeats: label => `Tekrarlıyor: ${label}`,
+  },
 };

@@ -8,6 +8,7 @@ import {
 } from '../data/repositories';
 import { INBOX_ID } from '../domain/ids';
 import { tagKey } from '../domain/tags';
+import { nextDueDate } from '../domain/recurrence';
 import * as models from '../domain/models';
 
 const REPOSITORIES = {
@@ -129,9 +130,33 @@ export const useTodoStore = create((set, get) => {
       return task;
     },
 
+    // Tekrarlayan görev tamamlanınca sonraki tekrar oluşturulur (etiketleriyle).
+    // İşaret kaldırılınca, henüz tamamlanmadıysa o sonraki görev silinir.
     async toggleTask(id) {
-      const task = models.toggleTask(findAlive('tasks', id));
-      await commit({ tasks: [task] });
+      const current = findAlive('tasks', id);
+      const now = new Date();
+      const task = models.toggleTask(current, now);
+      const tasks = [task];
+      const taskTags = [];
+
+      if (task.completedAt && current.recurrence) {
+        const next = models.createNextOccurrence(current, nextDueDate(current, now, now), now);
+        const tagIds = liveRecords(get().taskTags).filter(l => l.taskId === id).map(l => l.tagId);
+        task.nextTaskId = next.id;
+        tasks.push(next);
+        taskTags.push(...linksToAdd(next.id, tagIds));
+      } else if (!task.completedAt && current.nextTaskId) {
+        task.nextTaskId = null;
+        const next = get().tasks.find(t => t.id === current.nextTaskId);
+        if (next && isAlive(next) && !next.completedAt) {
+          tasks.push(models.softDelete(next, now));
+          taskTags.push(
+            ...liveRecords(get().taskTags).filter(l => l.taskId === next.id).map(l => models.softDelete(l, now)),
+          );
+        }
+      }
+
+      await commit({ tasks, taskTags });
       return task;
     },
 

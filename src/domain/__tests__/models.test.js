@@ -1,4 +1,11 @@
-import { createTask, updateTask, toggleTask, createTag, createChecklistItem } from '../models';
+import {
+  createTask,
+  updateTask,
+  toggleTask,
+  createTag,
+  createChecklistItem,
+  createNextOccurrence,
+} from '../models';
 import { INBOX_ID, newId } from '../ids';
 import { tagKey } from '../tags';
 
@@ -77,5 +84,42 @@ describe('kontrol listesi', () => {
 
   test('createChecklistItem boş başlığı reddeder', () => {
     expect(() => createChecklistItem('  ')).toThrow('boş olamaz');
+  });
+});
+
+describe('tekrar alanı', () => {
+  const monthly = { unit: 'month', interval: 1 };
+
+  test('createTask kuralı doğrular ve ay gününü tarihten alır', () => {
+    const task = createTask({ title: 'Kira', dueDate: '2026-01-31', recurrence: monthly });
+    expect(task.recurrence).toEqual({ unit: 'month', interval: 1, weekdays: null, from: 'due', monthDay: 31 });
+  });
+
+  test('tarih kaldırılınca tekrar da kalkar', () => {
+    const task = createTask({ title: 'x', dueDate: '2026-01-31', recurrence: monthly });
+    expect(updateTask(task, { dueDate: null }).recurrence).toBeNull();
+    expect(createTask({ title: 'x', recurrence: monthly }).recurrence).toBeNull();
+  });
+
+  test('kullanıcı tarihi değiştirirse ay günü yeni tarihten alınır', () => {
+    const task = createTask({ title: 'x', dueDate: '2026-01-31', recurrence: monthly });
+    expect(updateTask(task, { dueDate: '2026-02-15' }).recurrence.monthDay).toBe(15);
+    expect(updateTask(task, { title: 'y' }).recurrence.monthDay).toBe(31);
+  });
+
+  test('createNextOccurrence alanları kopyalar, listeyi sıfırlar, ay gününü korur', () => {
+    const task = createTask({
+      title: 'Kira', notes: 'n', categoryId: 'home', dueDate: '2026-01-31', dueTime: '09:00',
+      priority: 2, recurrence: monthly, checklist: [{ title: 'Dekont', done: true }],
+    });
+    const next = createNextOccurrence(task, '2026-02-28');
+    expect(next).toMatchObject({
+      title: 'Kira', notes: 'n', categoryId: 'home', dueDate: '2026-02-28', dueTime: '09:00',
+      priority: 2, completedAt: null, nextTaskId: null,
+    });
+    expect(next.id).not.toBe(task.id);
+    expect(next.recurrence.monthDay).toBe(31);
+    expect(next.checklist).toEqual([{ id: expect.any(String), title: 'Dekont', done: false }]);
+    expect(next.checklist[0].id).not.toBe(task.checklist[0].id);
   });
 });

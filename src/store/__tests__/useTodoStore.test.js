@@ -97,6 +97,65 @@ test('updateTask tagIds verilmezse etiketlere dokunmaz', async () => {
   expect(liveRecords(store().taskTags)).toHaveLength(1);
 });
 
+describe('tekrarlayan görevler', () => {
+  const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  test('tamamlanınca sonraki tekrar etiketleriyle oluşur', async () => {
+    const tag = await store().findOrCreateTag('ev');
+    const task = await store().addTask({
+      title: 'Çiçek sula', dueDate: today(), recurrence: { unit: 'day', interval: 2 }, tagIds: [tag.id],
+    });
+
+    await store().toggleTask(task.id);
+
+    const live = liveRecords(store().tasks);
+    const done = live.find(t => t.id === task.id);
+    const next = live.find(t => t.id !== task.id);
+    expect(done.completedAt).not.toBeNull();
+    expect(done.nextTaskId).toBe(next.id);
+    expect(next).toMatchObject({ title: 'Çiçek sula', completedAt: null });
+    expect(next.dueDate > today()).toBe(true);
+    expect(liveRecords(store().taskTags).filter(l => l.taskId === next.id).map(l => l.tagId)).toEqual([tag.id]);
+    expect(liveRecords(await persisted('tasks'))).toHaveLength(2);
+  });
+
+  test('işaret kaldırılınca oluşan tekrar silinir', async () => {
+    const tag = await store().findOrCreateTag('ev');
+    const task = await store().addTask({ title: 'x', dueDate: today(), recurrence: { unit: 'day' }, tagIds: [tag.id] });
+    await store().toggleTask(task.id);
+    const nextId = store().tasks.find(t => t.id === task.id).nextTaskId;
+
+    await store().toggleTask(task.id);
+
+    const live = liveRecords(store().tasks);
+    expect(live.map(t => t.id)).toEqual([task.id]);
+    expect(live[0]).toMatchObject({ completedAt: null, nextTaskId: null });
+    expect(liveRecords(store().taskTags).filter(l => l.taskId === nextId)).toEqual([]);
+  });
+
+  test('sonraki tekrar tamamlandıysa geri almada silinmez', async () => {
+    const task = await store().addTask({ title: 'x', dueDate: today(), recurrence: { unit: 'day' } });
+    await store().toggleTask(task.id);
+    const nextId = store().tasks.find(t => t.id === task.id).nextTaskId;
+    await store().toggleTask(nextId);
+
+    await store().toggleTask(task.id);
+
+    const next = store().tasks.find(t => t.id === nextId);
+    expect(next.deletedAt).toBeNull();
+    expect(next.completedAt).not.toBeNull();
+  });
+
+  test('tekrarsız görevde yeni görev oluşmaz', async () => {
+    const task = await store().addTask({ title: 'x', dueDate: today() });
+    await store().toggleTask(task.id);
+    expect(store().tasks).toHaveLength(1);
+  });
+});
+
 describe('kategoriler', () => {
   test('Gelen Kutusu silinemez ama yeniden adlandırılabilir', async () => {
     await expect(store().deleteCategory(INBOX_ID)).rejects.toThrow('silinemez');
