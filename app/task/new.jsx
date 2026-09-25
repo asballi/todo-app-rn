@@ -5,11 +5,12 @@ import { showError } from '../../src/components/confirm';
 import { goBack } from '../../src/components/navigation';
 import { useTodoStore, isAlive } from '../../src/store/useTodoStore';
 import { INBOX_ID } from '../../src/domain/ids';
-import { isValidDateKey } from '../../src/domain/dates';
+import { isValidDateKey, isValidTime } from '../../src/domain/dates';
+import { PRIORITIES } from '../../src/domain/models';
 import { strings } from '../../src/strings';
 
-// Parametreler (hepsi isteğe bağlı): title, categoryId, dueDate,
-// tagIds (virgülle ayrılmış).
+// Parametreler (hepsi isteğe bağlı): title, categoryId, dueDate, dueTime,
+// priority, tagIds (virgülle ayrılmış). Geçersiz olanlar yok sayılır.
 // Hızlı ekleme satırı bulunduğu ekranın varsayılanlarını buraya aktarır.
 export default function NewTaskScreen() {
   const params = useLocalSearchParams();
@@ -19,13 +20,15 @@ export default function NewTaskScreen() {
     const { categories, tags } = useTodoStore.getState();
     const category = categories.find(c => c.id === params.categoryId);
     const requestedTagIds = (params.tagIds ?? '').split(',');
+    const dueDate = isValidDateKey(params.dueDate) ? params.dueDate : null;
+    const priority = Number(params.priority);
     return {
       title: params.title ?? '',
       notes: '',
       categoryId: category && isAlive(category) ? category.id : INBOX_ID,
-      dueDate: isValidDateKey(params.dueDate) ? params.dueDate : null,
-      dueTime: null,
-      priority: 0,
+      dueDate,
+      dueTime: dueDate && isValidTime(params.dueTime) ? params.dueTime : null,
+      priority: PRIORITIES.includes(priority) ? priority : 0,
       tagIds: tags.filter(t => isAlive(t) && requestedTagIds.includes(t.id)).map(t => t.id),
     };
   });

@@ -123,6 +123,20 @@ export const strings = {
     placeholder: 'Görev ekle...',
     add: 'Görev ekle',
     details: 'Ayrıntılı görev ekle',
+    emptyTitle: 'Görev başlığı boş olamaz. Tarih, etiket gibi ifadelerin yanına bir başlık da yaz.',
+    previewLabel: 'Anlaşılan değerler',
+    priorityChip: label => `!${label}`,
+  },
+
+  // Hızlı eklemede tanınan ifadeler (karşılaştırma büyük/küçük harf ve Türkçe
+  // karakter farkı gözetmeden yapılır). Gün ve ay adları `dates` bölümünden gelir.
+  quickParse: {
+    today: ['bugün'],
+    tomorrow: ['yarın'],
+    dayAfterTomorrow: ['öbür gün', 'öbürgün', 'ertesi gün'],
+    nextWeek: ['haftaya'],
+    timeWord: 'saat',
+    priorities: { 1: ['düşük'], 2: ['orta'], 3: ['yüksek'] },
   },
 
   completed: {
