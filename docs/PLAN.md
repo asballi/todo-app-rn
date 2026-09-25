@@ -336,6 +336,16 @@ Task {
 - **v4 sonrası:** istatistikler, geniş web ekranında kenar çubuğu, kontrol listesinde sürükle-bırak.
 - **Sonraya bırakılanlar (tüm sürümlerden sonra):** tam alt görevler (kendi tarihi/etiketi olan, listelerde görünebilen alt görevler).
 
+## Testler
+
+- **Birim testleri (Jest):** `npm test` — saf mantık, store, veri taşıma, ayrıştırıcı. `America/New_York` saat diliminde koşar.
+- **Uçtan uca testler (Playwright):** `npm run e2e` — web derlemesini `dist/` klasörüne alır, küçük bir sunucuyla açar ve `e2e/*.spec.js` senaryolarını Chromium'da çalıştırır.
+  - İlk kez çalıştırmadan önce: `npx playwright install chromium`.
+  - Saat `Cuma 25 Eylül 2026 10:00` (İstanbul) olarak sabitlenir; hatırlatıcı ve gecikme testleri saati ileri alarak çalışır.
+  - Her test sonunda konsol hatası olmadığı doğrulanır; onay/uyarı pencereleri otomatik kabul edilir ve `dialogs` ile kontrol edilebilir.
+  - Headless Chromium bildirim iznini her zaman "reddedildi" bildirdiği için hatırlatıcı testleri sahte bir `Notification` sınıfı kullanır.
+  - Bilinen küçük sorun: aktif sekmeye tekrar basınca adres çubuğunda eski bir parametre (`/lists?id=...`) kalabiliyor (expo-router); gösterilen ekran doğru.
+
 ## Notlar
 
 - **Erişilebilirlik:** seçim durumu için `accessibilityState` yerine `aria-checked` gibi tekil `aria-*` prop'ları kullanılır. react-native-web 0.21 `accessibilityState` nesnesini yok sayar; React Native 0.81 ikisini de destekler.

@@ -11,3 +11,7 @@ npm-debug.*
 web-build/
 .env
 .env.local
+
+# Playwright e2e çıktıları
+test-results/
+playwright-report/
