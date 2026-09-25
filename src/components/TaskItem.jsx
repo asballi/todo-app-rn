@@ -18,7 +18,7 @@ export default function TaskItem({ task, onToggle, onPress }) {
       <TouchableOpacity
         onPress={onToggle}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: done }}
+        aria-checked={done}
         accessibilityLabel={task.title}
         hitSlop={8}
       >

@@ -8,6 +8,8 @@ import {
   isOverdue,
   isCompletedOn,
   formatDueLabel,
+  toTimeString,
+  quickDueDates,
 } from '../dates';
 
 describe('tarih anahtarları', () => {
@@ -94,4 +96,17 @@ describe('formatDueLabel', () => {
   test('tarihsiz görev', () => {
     expect(label(null)).toBeNull();
   });
+});
+
+test('toTimeString iki haneli saat ve dakika döndürür', () => {
+  expect(toTimeString(new Date(2026, 0, 1, 9, 5))).toBe('09:05');
+  expect(toTimeString(new Date(2026, 0, 1, 23, 59))).toBe('23:59');
+});
+
+test('quickDueDates bugün, yarın ve bir hafta sonrası', () => {
+  expect(quickDueDates(new Date(2026, 11, 31, 22, 0)).map(d => d.value)).toEqual([
+    '2026-12-31',
+    '2027-01-01',
+    '2027-01-07',
+  ]);
 });

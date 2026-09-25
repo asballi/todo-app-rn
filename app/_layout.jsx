@@ -31,21 +31,22 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="category-form"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            headerStyle: { backgroundColor: colors.background },
-            headerShadowVisible: false,
-            headerTitleStyle: { fontWeight: '700', color: colors.text },
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
+        <Stack.Screen name="category-form" options={modalOptions} />
+        <Stack.Screen name="task/new" options={modalOptions} />
+        <Stack.Screen name="task/[id]" options={modalOptions} />
       </Stack>
     </>
   );
 }
+
+const modalOptions = {
+  presentation: 'modal',
+  headerShown: true,
+  headerStyle: { backgroundColor: colors.background },
+  headerShadowVisible: false,
+  headerTitleStyle: { fontWeight: '700', color: colors.text },
+  contentStyle: { backgroundColor: colors.background },
+};
 
 const styles = StyleSheet.create({
   center: {

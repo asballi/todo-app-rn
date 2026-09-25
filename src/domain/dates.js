@@ -73,3 +73,17 @@ export function formatDueLabel(task, now = new Date()) {
   }
   return task.dueTime ? `${label} ${task.dueTime}` : label;
 }
+
+export function toTimeString(date) {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// Görev formundaki hızlı tarih seçenekleri.
+export function quickDueDates(now = new Date()) {
+  const today = toDateKey(now);
+  return [
+    { label: 'Bugün', value: today },
+    { label: 'Yarın', value: addDays(today, 1) },
+    { label: 'Gelecek hafta', value: addDays(today, 7) },
+  ];
+}

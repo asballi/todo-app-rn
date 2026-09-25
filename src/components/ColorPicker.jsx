@@ -11,7 +11,7 @@ export default function ColorPicker({ value, onChange, colors = categoryColors }
           key={color}
           accessibilityRole="radio"
           accessibilityLabel={`Renk ${color}`}
-          accessibilityState={{ selected: value === color }}
+          aria-checked={value === color}
           onPress={() => onChange(color)}
           style={[styles.swatch, { backgroundColor: color }]}
         >

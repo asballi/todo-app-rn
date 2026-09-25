@@ -13,7 +13,7 @@ export default function IconPicker({ value, onChange, color = colors.primary }) 
             key={icon}
             accessibilityRole="radio"
             accessibilityLabel={`Simge ${icon}`}
-            accessibilityState={{ selected }}
+            aria-checked={selected}
             onPress={() => onChange(icon)}
             style={[styles.cell, selected && { backgroundColor: color, borderColor: color }]}
           >

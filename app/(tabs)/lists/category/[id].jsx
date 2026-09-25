@@ -44,6 +44,7 @@ export default function CategoryScreen() {
           <TaskItem
             task={item}
             onToggle={() => useTodoStore.getState().toggleTask(item.id).catch(showError)}
+            onPress={() => router.push(`/task/${item.id}`)}
           />
         )}
         ListEmptyComponent={

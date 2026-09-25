@@ -148,6 +148,9 @@ src/
     TagPicker.jsx
     CategoryPicker.jsx
     PriorityPicker.jsx
+    Chip.jsx                 → seçim çipi (radio) / eylem çipi (button)
+    DateInput.jsx            → mobil: @react-native-community/datetimepicker
+    DateInput.web.jsx        → web: <input type="date|time">
     ColorPicker.jsx
     IconPicker.jsx
     confirm.js               → web'de window.confirm, mobilde Alert
@@ -166,7 +169,8 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
    Testler `America/New_York` saat diliminde koşar (UTC gerisinde + yaz saati), böylece tarihlerin UTC olarak yorumlanması yakalanır. Çalıştırmak için: `npm test`.
 3. ✅ **Kategoriler:** Gelen Kutusu, oluşturma/düzenleme/silme, Listeler ekranı, kategori ekranı.
    `TaskItem` (öncelik renkli checkbox, tarih etiketi) ve `QuickAdd` bu adımda eklendi; 4. adımda görev detayına bağlanacak.
-4. **Görevler:** `TaskForm`, detay ve yeni görev modalları, `QuickAdd`, öncelik ve tarih seçimi.
+4. ✅ **Görevler:** `TaskForm`, detay ve yeni görev modalları, `QuickAdd`, öncelik ve tarih seçimi.
+   `QuickAdd` ayrıntı butonu, yazılan başlık ve ekranın varsayılanlarıyla tam formu açar. Bugün sekmesindeki geçici listede satır içi düzenleme kaldırıldı (K10).
 5. **Etiketler:** `TagPicker` (yazarak oluşturma), etiket yönetimi ekranı, etiket ekranı.
 6. **Akıllı listeler:** Bugün, Yaklaşan, Gecikmiş; varsayılan sıralama; `CompletedSection`.
 7. **Arama:** başlık/not araması + kategori, etiket (VE) ve öncelik filtreleri.
@@ -177,7 +181,11 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
 - **v3:** kaydırma hareketleri, geri alma (Undo), karanlık mod, `#etiket` / doğal dil ile hızlı ekleme, etiket filtresinde VEYA, dışa/içe aktarma, istatistikler, geniş web ekranında kenar çubuğu, "Önemli" akıllı listesi.
 - **v4:** hesap + Supabase senkronizasyonu.
 
+## Notlar
+
+- **Erişilebilirlik:** seçim durumu için `accessibilityState` yerine `aria-checked` gibi tekil `aria-*` prop'ları kullanılır. react-native-web 0.21 `accessibilityState` nesnesini yok sayar; React Native 0.81 ikisini de destekler.
+
 ## Açık konular
 
-- **Tarih/saat seçici:** `@react-native-community/datetimepicker` web'de çalışmaz. 4. adımda web için ayrı bir çözüm seçilmeli (ör. `<input type="date">` / `type="time"`).
+- ~~**Tarih/saat seçici**~~ → Çözüldü (4. adım): mobilde `@react-native-community/datetimepicker`, web'de `<input type="date|time">` (`DateInput.web.jsx`), üstte Bugün / Yarın / Gelecek hafta / Yok çipleri. Web alanları tarayıcının diline göre görünür (Türkçe tarayıcıda `26.09.2026`, `15:30`).
 - **Arayüz dili:** yalnızca Türkçe mi, yoksa çoklu dil desteği mi olacak?
