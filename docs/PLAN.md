@@ -194,11 +194,74 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
 
 **v1 tamamlandı.**
 
+## v2 — Hatırlatıcılar, tekrarlayan görevler, kontrol listesi
+
+### Kararlar
+
+| # | Konu | Karar |
+|---|------|-------|
+| V1 | Hatırlatıcı modeli | Görev başına en fazla 3 hatırlatıcı, bitiş anına göre: Zamanında · 10 dk · 30 dk · 1 saat · 1 gün önce |
+| V2 | Platformlar | Mobil: `expo-notifications` yerel bildirim. Web: tarayıcı Notification API + uygulama içi şerit; sekme kapalıyken bildirim yok |
+| V3 | Tekrar | Hazır seçenekler + "her N gün/hafta/ay/yıl", haftalıkta gün seçimi, bitiş ya da tamamlanma tarihinden sayma |
+| V4 | Alt görevler | Basit kontrol listesi (metin + işaret). Tam alt görevler tüm sürümlerden sonra değerlendirilecek |
+| V5 | Dil | Şimdilik yalnızca Türkçe; v2'den sonra tüm metinler tek bir dil dosyasına taşınacak (çok dile hazırlık) |
+
+### Kurallar
+
+**Hatırlatıcılar**
+- Bitiş tarihi olmayan görevde hatırlatıcı olmaz; tarih kaldırılınca hatırlatıcılar da kalkar.
+- Referans an: saatli görevde bitiş saati, saatsiz görevde varsayılan hatırlatma saati (09:00, Ayarlar'dan değiştirilebilir).
+- Görev tamamlanır, silinir ya da hatırlatma anı geçmişteyse bildirim kurulmaz / iptal edilir.
+- Bildirim izni ilk hatırlatıcı eklenirken istenir; reddedilirse görev yine kaydedilir, formda "Bildirim izni kapalı" uyarısı görünür.
+- Uygulama kapalıyken kaçırılan hatırlatıcılar açılışta tekrar gösterilmez.
+- Bildirim: başlık = görev adı, gövde = zaman etiketi ("Bugün 15:00"); dokununca görev detayı açılır.
+
+**Tekrarlayan görevler**
+- Tekrar için bitiş tarihi gerekir; tarih kaldırılınca tekrar da kalkar.
+- Tamamlanınca görev tamamlanmış kalır, sonraki tekrar yeni görev olarak oluşur (başlık, not, kategori, etiketler, öncelik, saat, hatırlatıcılar, tekrar kuralı ve işaretsiz kontrol listesi kopyalanır).
+- `from: 'due'` (varsayılan): bitiş tarihinden ileri sayılır, bugünü geçene kadar atlanır (gecikmiş görevde geçmiş kopyalar birikmez). `from: 'completion'`: tamamlandığı günden sayılır.
+- Ay sonu: 31 Ocak'ta başlayan aylık görev Şubat'ta 28'ine, Mart'ta 31'ine düşer (serinin ilk günü korunur).
+- Tamamlanan tekrarlayan görevin işareti kaldırılırsa ondan oluşan sonraki görev (henüz tamamlanmadıysa) silinir.
+- Görev satırında tekrar simgesi görünür.
+
+**Kontrol listesi**
+- Görev satırında ilerleme ("2/5"); detayda ekle (Enter), işaretle, düzenle, sil. Sıralama eklenme sırası (sürükle-bırak v3).
+- Otomatik tamamlama yok: tüm maddeler işaretlenince görev tamamlanmaz, görev tamamlanınca maddeler işaretlenmez.
+- Arama madde metinlerinde de arar.
+
+### Veri modeli eklemeleri (şema sürümü 3)
+
+```ts
+Task {
+  // ...v1 alanları
+  reminders: number[]              // bitiş anından kaç dakika önce: [0, 60]; en fazla 3
+  recurrence: null | {
+    unit: 'day' | 'week' | 'month' | 'year'
+    interval: number               // >= 1
+    weekdays: number[] | null      // yalnızca 'week': 0 = Pazar … 6 = Cumartesi
+    from: 'due' | 'completion'
+    monthDay: number | null        // 'month'/'year': serinin ilk günü (ay sonu için)
+  }
+  nextTaskId: string | null        // tekrarla oluşturulan sonraki görev (geri alma için)
+  checklist: { id: string, title: string, done: boolean }[]
+}
+```
+- Migration v2 → v3: mevcut görevlere `reminders: []`, `recurrence: null`, `nextTaskId: null`, `checklist: []` eklenir.
+- Ayarlar `@todo/settings` anahtarında: `{ defaultReminderTime: '09:00' }`.
+- Kurulu bildirimlerin kimlikleri cihaza özeldir (`@todo/scheduledNotifications`), senkronize edilmez.
+
+### v2 uygulama adımları
+
+1. **Kontrol listesi:** şema v3 + migration, `ChecklistEditor`, satırda ilerleme, aramada madde metni. Yeni metinler `src/strings.js` içinde.
+2. **Tekrarlayan görevler:** `nextOccurrence` (saf fonksiyon, kapsamlı testler), tamamlama/geri alma kuralları, `RecurrencePicker`, satırda simge.
+3. **Hatırlatıcılar:** `ReminderPicker`, Ayarlar ekranı (varsayılan saat), bildirim zamanlayıcı (mobil `expo-notifications`, web Notification API + şerit), izin akışı, bildirime dokununca detay.
+4. **Metinleri dil dosyasına taşıma** (V5): davranış değişikliği olmadan, yalnızca metin taşıyan commit.
+
 ## Sonraki sürümler
 
-- **v2:** alarmlar/hatırlatıcılar (`expo-notifications` mobilde; web'de yalnızca uygulama açıkken uygulama içi uyarı), saatsiz görevler için ayarlanabilir varsayılan hatırlatma saati, tekrarlayan görevler, alt görevler.
 - **v3:** kaydırma hareketleri, geri alma (Undo), karanlık mod, `#etiket` / doğal dil ile hızlı ekleme, etiket filtresinde VEYA, dışa/içe aktarma, istatistikler, geniş web ekranında kenar çubuğu, "Önemli" akıllı listesi.
 - **v4:** hesap + Supabase senkronizasyonu.
+- **Sonraya bırakılanlar (tüm sürümlerden sonra):** tam alt görevler (kendi tarihi/etiketi olan, listelerde görünebilen alt görevler).
 
 ## Notlar
 
@@ -207,4 +270,4 @@ Her adım ayrı, çalışır durumda bir commit/PR olmalı.
 ## Açık konular
 
 - ~~**Tarih/saat seçici**~~ → Çözüldü (4. adım): mobilde `@react-native-community/datetimepicker`, web'de `<input type="date|time">` (`DateInput.web.jsx`), üstte Bugün / Yarın / Gelecek hafta / Yok çipleri. Web alanları tarayıcının diline göre görünür (Türkçe tarayıcıda `26.09.2026`, `15:30`).
-- **Arayüz dili:** yalnızca Türkçe mi, yoksa çoklu dil desteği mi olacak?
+- ~~**Arayüz dili**~~ → Çözüldü (V5): şimdilik yalnızca Türkçe, v2 sonunda metinler tek dosyaya taşınacak.
