@@ -151,7 +151,8 @@ Ekranlar depolamaya doğrudan erişmez; yalnızca store ve repository üzerinden
 
 Her adım ayrı, çalışır durumda bir commit/PR olmalı.
 
-1. **Altyapı:** `expo-router` kurulumu, giriş noktasının `expo-router/entry` olması, sekme iskeleti, `App.js`'in kaldırılması. `devDependencies` içindeki çakışan `babel-preset-expo ~12.0.0` düzeltmesi.
+1. ✅ **Altyapı:** `expo-router` kurulumu, giriş noktasının `expo-router/entry` olması, sekme iskeleti, `App.js`'in kaldırılması. `devDependencies` içindeki çakışan `babel-preset-expo ~12.0.0` düzeltmesi.
+   Eski liste geçici olarak `src/legacy/LegacyTodoList.jsx` içinde Bugün sekmesinde çalışıyor; 4. ve 6. adımlarda kaldırılacak.
 2. **Veri katmanı:** storage, repository'ler, Zustand store, migration. Saf mantık için birim testleri (`jest-expo`): tarih kuralları, sıralama, migration.
 3. **Kategoriler:** Gelen Kutusu, oluşturma/düzenleme/silme, Listeler ekranı, kategori ekranı.
 4. **Görevler:** `TaskForm`, detay ve yeni görev modalları, `QuickAdd`, öncelik ve tarih seçimi.

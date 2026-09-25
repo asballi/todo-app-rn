@@ -8,17 +8,17 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
-  StatusBar,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
+import { colors } from '../theme';
+
+// Geçici: v1 planının 4. ve 6. adımlarında yeni görev ekranlarıyla değiştirilecek.
 
 const STORAGE_KEY = '@todos';
 const FILTERS = ['Tümü', 'Aktif', 'Tamamlanan'];
 
-export default function App() {
+export default function LegacyTodoList() {
   const [todos, setTodos] = useState([]);
   const [inputText, setInputText] = useState('');
   const [filter, setFilter] = useState('Tümü');
@@ -147,16 +147,13 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ecebff" />
+    <View style={styles.safe}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.container}>
-          <Text style={styles.title}>Yapılacaklar</Text>
-
           {/* Input */}
           <View style={styles.inputRow}>
             <TextInput
@@ -210,14 +207,14 @@ export default function App() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#ecebff',
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -233,14 +230,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 6,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#1a1a2e',
-    textAlign: 'center',
-    marginBottom: 20,
-    letterSpacing: -0.5,
   },
 
   // Input
