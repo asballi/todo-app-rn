@@ -453,7 +453,15 @@ e2e/
 
 ### v4 uygulama adımları
 
-1. ⬜ **Sunucu şeması:** `supabase/migrations/` (tablolar, RLS, `server_seq` / `server_updated_at` tetikleyicileri, `push` / `pull`, `purged_seq` ile `purge_deleted`, `delete_account`, `sync_meta`). `npm run test:db`: migration'lar yerel Postgres 16'ya uygulanır, küçük bir `auth` taklidiyle RLS, eski `updated_at` reddi, sıra, temizlik ve hesap silme denenir.
+1. ✅ **Sunucu şeması:** `supabase/migrations/20260926120000_sync_schema.sql` (tablolar, RLS, tetikleyici, `push` / `pull`, `purge_deleted`, `delete_account`, Realtime yayını) ve `20260926120100_purge_schedule.sql` (pg_cron ile günlük temizlik; pg_cron yoksa uyarıyla atlanır).
+   - `push(client_schema, changes)` → `{ written: { tasks: [id, …], categories, tags, task_tags } }`. Gönderilip `written`'da olmayanlar sunucuda daha yeni ya da aynı sürümü olanlardır. Aynı kayıt bir gönderimde iki kez gelirse en yenisi alınır.
+   - `pull(client_schema, since, lim)` → `{ records: [{ collection, record }], next, has_more, purged_seq }`; sayfa 1–1000 (varsayılan 500). `record` snake_case ve `user_id`'siz; zaman damgaları Postgres biçiminde (`…+00:00`) döner, istemci `toISOString()` ile çevirir.
+   - Hatalar: eski şema → `client_outdated` (`detail`: en küçük sürüm); oturum yok → `not_authenticated`.
+   - Kullanıcı başına kilit tetikleyicide: tablolara doğrudan yazmalar da sıraya girer ve `server_seq` alır.
+   - Yetkiler: `anon` hiçbir şeye erişemez; `authenticated` kendi satırlarında select / insert / update yapar (delete yok), sırayı ilerletemez, `purge_deleted`'ı çağıramaz.
+   - Kısıtlar istemcinin zaten uyduğu kurallardır: öncelik 0–3, saat `HH:mm` ve yalnızca tarihle, `reminders` / `checklist` dizi, `recurrence` nesne ya da null. Kısıta uymayan bir kayıt tüm gönderimi reddeder; motor (3. adım) böyle bir kaydın kuyruğu kilitlememesini sağlamalı.
+   - `npm run test:db` (33 test, `node --test` + `pg`): geçici bir Postgres kümesi başlatır (root olarak çalışırken `postgres` kullanıcısıyla), `supabase/tests/supabase-mock.sql` ile roller, `auth.users`, `auth.uid()`, varsayılan yetkiler ve Realtime yayınını taklit eder, migration'ları uygular. Kapsam: alanların gidiş-dönüşü, son güncellenen kazanır, kısıtlar, sayfalama, sürüm kilidi, RLS ve yetkiler, temizlik ve `purged_seq`, hesap silme, eşzamanlı yazmaların sırası. Testlerin gerçekten yakaladığı, şema bilerek bozularak denendi (`>` yerine `>=`, kilit kaldırma, yetki daraltmayı kaldırma, `user_id` sızdırma).
+   - Postgres programları `pg_config`, `/usr/lib/postgresql/*/bin` ya da `PG_BIN` ile bulunur; var olan bir sunucu için `TEST_DATABASE_URL` (süper kullanıcı) verilebilir.
 2. ⬜ **İstemci hazırlığı (Supabase olmadan):** belirleyici `nextTaskId` (X13), etiket birleştirme (X14, içe aktarmayla ortak), yerel 30 gün temizliği (X10), `commit`'in gönderme kuyruğuna yazması. Görünür değişiklik yok.
 3. ⬜ **Senkron motoru:** `src/sync/`, `remote` arayüzü ve sahte sunucu; gönderme, çekme, ilk birleştirme, tam eşitleme, sürüm kilidi, çıkış. Jest.
 4. ⬜ **Supabase + Hesap ekranı:** `@supabase/supabase-js`, oturum saklama, Ayarlar → Hesap (giriş, durum, Şimdi eşitle, Çıkış, Hesabı sil), Realtime tetikleyici, zamanlama.
@@ -469,6 +477,7 @@ e2e/
 
 - **Birim testleri (Jest):** `npm test` — saf mantık, store, veri taşıma, ayrıştırıcı. `America/New_York` saat diliminde koşar.
   - Bileşen testi olarak yalnızca mobil kaydırma satırı var (`react-test-renderer` + gesture-handler `jest-utils`; reanimated ve simgeler `jest.setup.js` / test dosyasında taklit edilir).
+- **SQL testleri:** `npm run test:db` — `supabase/migrations/` dosyalarını geçici bir Postgres'e uygular ve `supabase/tests/*.test.js` senaryolarını çalıştırır (bkz. v4 1. adım). Postgres sunucu programları gerekir; Docker gerekmez.
 - **Uçtan uca testler (Playwright):** `npm run e2e` — web derlemesini `dist/` klasörüne alır, küçük bir sunucuyla açar ve `e2e/*.spec.js` senaryolarını Chromium'da çalıştırır.
   - İlk kez çalıştırmadan önce: `npx playwright install chromium`.
   - Saat `Cuma 25 Eylül 2026 10:00` (İstanbul) olarak sabitlenir; hatırlatıcı ve gecikme testleri saati ileri alarak çalışır.
