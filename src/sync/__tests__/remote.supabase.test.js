@@ -7,8 +7,12 @@ test('RPC hataları motorun türlerine çevrilir', () => {
   expect(toRemoteError({ message: 'x' }, 401).kind).toBe('unauthenticated');
   expect(toRemoteError({ message: 'violates check constraint', code: '23514' }).kind).toBe('rejected');
   expect(toRemoteError({ message: 'invalid input syntax', code: '22P02' }).kind).toBe('rejected');
-  expect(toRemoteError({ message: 'TypeError: fetch failed', code: '' }).kind).toBe('network');
+  expect(toRemoteError({ message: 'TypeError: fetch failed', code: '' }, 0).kind).toBe('network');
   expect(toRemoteError({ message: 'boom', code: 'XX000' }, 500).kind).toBe('network');
+  // Sunucu yanıt verdi ama isteği reddetti: kurulum sorunu, mesajıyla gösterilir.
+  expect(toRemoteError({ message: 'Could not find the function public.push', code: 'PGRST202' }, 404))
+    .toMatchObject({ kind: 'server', message: 'Could not find the function public.push (PGRST202)' });
+  expect(toRemoteError({ message: 'permission denied for function push', code: '42501' }, 403).kind).toBe('server');
 });
 
 test('giriş hataları', () => {

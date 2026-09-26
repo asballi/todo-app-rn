@@ -21,7 +21,11 @@ export function toRemoteError(error, status) {
   if (code.startsWith('22') || code.startsWith('23')) {
     return new RemoteError('rejected', message, error.details ?? null);
   }
-  return new RemoteError('network', message);
+  // Yanıt hiç gelmediyse (status 0, fetch hatası) ya da sunucu geçici hata verdiyse ağ
+  // sorunu; başka bir hata yanıtı (ör. PGRST202 "fonksiyon bulunamadı", 42501 yetki)
+  // kurulum sorunudur ve asıl mesajıyla gösterilir.
+  if (!status || status >= 500) return new RemoteError('network', message);
+  return new RemoteError('server', code ? `${message} (${code})` : message);
 }
 
 // Giriş (Auth) hatası: kod hatalı / süresi geçmiş, çok sık istek, diğerleri ağ.

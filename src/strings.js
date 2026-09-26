@@ -322,6 +322,7 @@ export const strings = {
       blocked: n => `${n} kayıt sunucu tarafından kabul edilmedi; düzenlersen yeniden denenir.`,
       outdated: 'Senkronizasyon için uygulamayı güncelle. Değişikliklerin bu cihazda saklanıyor.',
       network: 'Sunucuya ulaşılamadı; bağlantı gelince yeniden denenecek.',
+      server: message => `Sunucu hatası: ${message}`,
       unauthenticated: 'Oturum doğrulanamadı.',
       unknown: message => `Eşitleme hatası: ${message}`,
     },

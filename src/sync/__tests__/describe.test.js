@@ -20,6 +20,8 @@ test('durum satırları', () => {
     .toEqual(['error', 'normal', 'normal', 'warning']);
   expect(describeSync({ ...base, phase: 'error', errorKind: 'unknown', error: 'boom' }, NOW)[0].text).toBe('Eşitleme hatası: boom');
   expect(describeSync({ ...base, phase: 'outdated' }, NOW)[0].tone).toBe('error');
+  expect(describeSync({ ...base, phase: 'error', errorKind: 'server', error: 'yok (PGRST202)' }, NOW)[0].text)
+    .toBe('Sunucu hatası: yok (PGRST202)');
 });
 
 test('Ayarlar özeti', () => {
