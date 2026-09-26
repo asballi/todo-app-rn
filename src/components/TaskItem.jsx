@@ -6,7 +6,9 @@ import { formatDueLabel, isOverdue } from '../domain/dates';
 import { strings } from '../strings';
 import { recurrenceLabel } from '../domain/recurrence';
 
-export default function TaskItem({ task, tags = [], onToggle, onPress }) {
+// trailing: satırın sonuna eklenen öğe (web'de sil butonu); rowProps: satırın
+// dokunulabilir öğesine verilen ek özellikler (mobilde ekran okuyucu eylemleri).
+export default function TaskItem({ task, tags = [], onToggle, onPress, trailing, rowProps }) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const done = !!task.completedAt;
@@ -20,7 +22,7 @@ export default function TaskItem({ task, tags = [], onToggle, onPress }) {
   const Row = onPress ? TouchableOpacity : View;
 
   return (
-    <Row style={[styles.row, done && styles.rowDone]} onPress={onPress} activeOpacity={0.7}>
+    <Row style={[styles.row, done && styles.rowDone]} onPress={onPress} activeOpacity={0.7} {...rowProps}>
       <TouchableOpacity
         onPress={onToggle}
         accessibilityRole="checkbox"
@@ -72,6 +74,7 @@ export default function TaskItem({ task, tags = [], onToggle, onPress }) {
           </View>
         )}
       </View>
+      {trailing}
     </Row>
   );
 }
@@ -85,7 +88,6 @@ const makeStyles = colors => StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    marginBottom: 8,
   },
   rowDone: {
     opacity: 0.55,

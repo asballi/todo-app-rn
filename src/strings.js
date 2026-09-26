@@ -105,6 +105,14 @@ export const strings = {
     delete: 'Görevi sil',
   },
 
+  // Görev satırında kaydırma (mobil) ve üzerine gelince sil (web).
+  swipe: {
+    complete: 'Tamamla',
+    reopen: 'Geri aç',
+    delete: 'Sil',
+    deleteTask: title => `"${title}" görevini sil`,
+  },
+
   taskForm: {
     titlePlaceholder: 'Görev başlığı',
     notesPlaceholder: 'Not ekle',

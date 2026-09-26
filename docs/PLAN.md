@@ -328,7 +328,9 @@ Task {
 4. ✅ **F:** dışa / içe aktarma — `src/data/backup.js` (oluştur / doğrula / birleştir, 13 test), platform dosya işlemleri `backupFile.web.js` / `backupFile.native.js`. Aynı adda farklı kimlikli etiketler mevcut etikete bağlanır, çift etiket bağı eklenmez. Onay özeti yalnızca görünen değişiklikleri sayar (silinmiş gelen yeni kayıtlar "eklenecek" sayılmaz; canlı kaydı silen güncelleme "silinecek" olarak gösterilir). Ayarlar dışa aktarılır ama içe aktarılmaz (cihaza özel tercih).
 5. ✅ **G + H:** etiket filtresinde VEYA, "Önemli" listesi — `searchTasks` `tagMode: 'all' | 'any'` alır; seçim en az 2 etiket varken görünür, filtre sayısına katılmaz, "Filtreleri temizle" Hepsi'ne döndürür. Önemli (`/lists/important`): yüksek öncelikli açık görevler; simge rengi Gecikmiş'ten ayrışan koyu amber (`colors.important`).
 6. ✅ **D:** karanlık mod — `src/theme.js`: `lightColors` / `darkColors`, `ThemeProvider` (kök düzende `settings.theme` ile), `useTheme()` ve `useThemedStyles(makeStyles)`; stil fabrikaları modül düzeyinde, renkler bileşen içinde hook'tan alınır. `system` cihaz/tarayıcı tercihini canlı izler; web'de sayfa zemini ve `color-scheme` de ayarlanır (tarih alanları, kaydırma çubukları). Kontrast `src/__tests__/theme.test.js` ile kilitli: metinler ≥ 4,5:1, simgeler ve öncelik halkaları ≥ 3:1. Bu yüzden açık temada birkaç renk koyulaştırıldı (ikincil metin, yer tutucu, tehlike kırmızısı, etiket grisi, birincil mor; öncelik halkalarında "yok" grisi ve orta turuncu). Kullanıcı renkli zeminlerde (kategori simgesi, seçili çip, tamamlanmış halka) simge rengi `onColor(zemin)` ile beyaz/koyu seçilir. Bilinen sınır: kategori/etiket renkleri metin olarak kullanıldığında (ör. etiket adı) açık temada sarı gibi açık renkler düşük kontrastlı kalır; palet kullanıcı seçimi olduğu için değiştirilmedi. Mobil cihazda denenmedi (yalnızca derleme).
-7. **B:** kaydırma hareketleri
+7. ✅ **B:** kaydırma hareketleri — `TaskRows` her satırı `SwipeableRow` ile sarar. Mobil (`SwipeableRow.jsx`): `react-native-gesture-handler` Pan + `react-native-reanimated`; 15 px yatay hareketten sonra satır kayar (dikey kaydırma listeye kalır), eşik `swipe.js` içinde genişliğin 1/3'ü; arkada birincil renkte "Tamamla"/"Geri aç", kırmızıda "Sil". Silme onay sormaz, geri alma şeridi çıkar. Ekran okuyucu için satırda `complete` / `delete` eylemleri. Uygulama kökü mobilde `GestureHandlerRootView` ile sarılır (`GestureRoot.jsx`). Web (`SwipeableRow.web.jsx`, `GestureRoot.web.jsx`): kütüphaneler pakete girmez; satırın sağında sil butonu yalnızca fare üzerindeyken ya da klavye odağındayken görünür, görünmezken dokunmaya kapalıdır (dokunmatik ekranda yanlışlıkla silinmesin), yerini koruduğu için satır zıplamaz. Mobil cihazda denenmedi: hareket mantığı Jest'te gesture-handler test araçlarıyla, derleme Android/iOS dışa aktarımıyla doğrulandı.
+
+v3 tamamlandı.
 
 ## Sonraki sürümler
 
@@ -339,6 +341,7 @@ Task {
 ## Testler
 
 - **Birim testleri (Jest):** `npm test` — saf mantık, store, veri taşıma, ayrıştırıcı. `America/New_York` saat diliminde koşar.
+  - Bileşen testi olarak yalnızca mobil kaydırma satırı var (`react-test-renderer` + gesture-handler `jest-utils`; reanimated ve simgeler `jest.setup.js` / test dosyasında taklit edilir).
 - **Uçtan uca testler (Playwright):** `npm run e2e` — web derlemesini `dist/` klasörüne alır, küçük bir sunucuyla açar ve `e2e/*.spec.js` senaryolarını Chromium'da çalıştırır.
   - İlk kez çalıştırmadan önce: `npx playwright install chromium`.
   - Saat `Cuma 25 Eylül 2026 10:00` (İstanbul) olarak sabitlenir; hatırlatıcı ve gecikme testleri saati ileri alarak çalışır.

@@ -6,6 +6,7 @@ import { useTodoStore } from '../src/store/useTodoStore';
 import { useReminders } from '../src/notifications/useReminders';
 import ReminderBanner from '../src/components/ReminderBanner';
 import UndoBar from '../src/components/UndoBar';
+import GestureRoot from '../src/components/GestureRoot';
 import { ThemeProvider, useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
 
@@ -13,9 +14,11 @@ import { strings } from '../src/strings';
 export default function RootLayout() {
   const mode = useTodoStore(s => s.settings.theme ?? 'system');
   return (
-    <ThemeProvider mode={mode}>
-      <Root />
-    </ThemeProvider>
+    <GestureRoot>
+      <ThemeProvider mode={mode}>
+        <Root />
+      </ThemeProvider>
+    </GestureRoot>
   );
 }
 
