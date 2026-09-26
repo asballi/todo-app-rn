@@ -97,6 +97,9 @@ test('giriş: kod gönderme, doğrulama, oturum ve yalnızca bu cihazdan çıkı
 
   await remote.signOut();
   expect(client.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+  // Çevrimdışı çıkışta auth-js yerel oturumu siler, yalnızca hata döndürür.
+  client.auth.signOut.mockResolvedValueOnce({ error: { status: 0, message: 'fetch failed' } });
+  await expect(remote.signOut()).resolves.toBeUndefined();
 
   client.auth.verifyOtp.mockResolvedValueOnce({ data: {}, error: { status: 403, message: 'expired' } });
   await expect(remote.verifyCode('a@b.c', '000000')).rejects.toMatchObject({ kind: 'invalidCode' });

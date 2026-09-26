@@ -85,10 +85,12 @@ export function createSupabaseRemote({ url, key, client: injected } = {}) {
       return () => data.subscription.unsubscribe();
     },
 
-    // Yalnızca bu cihazın oturumu kapanır; diğer cihazlar girişli kalır.
+    // Yalnızca bu cihazın oturumu kapanır; diğer cihazlar girişli kalır. auth-js
+    // sunucuya ulaşamasa da (çevrimdışı çıkış) yerel oturumu siler ve yalnızca hata
+    // döndürür; sunucudaki oturum süresi dolunca kendiliğinden düşer. Bu yüzden hata
+    // yok sayılır.
     async signOut() {
-      const { error } = await client.auth.signOut({ scope: 'local' });
-      if (error) throw toAuthError(error);
+      await client.auth.signOut({ scope: 'local' });
     },
 
     // Mobilde uygulama arka plandayken oturum yenileme durdurulur (Supabase önerisi).

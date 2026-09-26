@@ -4,7 +4,8 @@
 //
 // Satırlar sunucu biçimindedir (snake_case) ve zaman damgaları Postgres'in
 // döndürdüğü biçimde (+00:00) döner; böylece istemcinin çevirisi de sınanır.
-import { RemoteError } from './errors';
+// Uzantı açık yazılır: e2e sahte Supabase sunucusu bu dosyayı doğrudan Node ile yükler.
+import { RemoteError } from './errors.js';
 
 const SERVER_COLLECTIONS = ['tasks', 'categories', 'tags', 'task_tags'];
 const SERVER_ONLY = ['server_seq', 'server_updated_at'];

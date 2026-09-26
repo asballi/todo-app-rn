@@ -20,13 +20,21 @@ const test = base.test.extend({
     },
     { auto: true },
   ],
+  // errors.ignore: bilinçli çevrimdışı senaryolarda beklenen ağ hataları gibi,
+  // yok sayılacak iletiler için düzenli ifadeler. watch ile ikinci bir sayfa
+  // (ör. iki cihaz senaryosunda) da izlenir.
   consoleErrors: [
     async ({ page }, use) => {
       const errors = [];
-      page.on('pageerror', e => errors.push(e.message));
-      page.on('console', m => ['error', 'warning'].includes(m.type()) && errors.push(`${m.type()}: ${m.text()}`));
+      errors.ignore = [];
+      errors.watch = target => {
+        target.on('pageerror', e => errors.push(e.message));
+        target.on('console', m => ['error', 'warning'].includes(m.type()) && errors.push(`${m.type()}: ${m.text()}`));
+      };
+      errors.watch(page);
       await use(errors);
-      base.expect(errors, 'konsol hatası olmamalı').toEqual([]);
+      const unexpected = errors.filter(e => !errors.ignore.some(pattern => pattern.test(e)));
+      base.expect(unexpected, 'konsol hatası olmamalı').toEqual([]);
     },
     { auto: true },
   ],

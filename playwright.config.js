@@ -3,6 +3,7 @@
 const { defineConfig } = require('@playwright/test');
 
 const port = Number(process.env.E2E_PORT ?? 8123);
+const supabasePort = Number(process.env.E2E_SUPABASE_PORT ?? 8124);
 
 module.exports = defineConfig({
   testDir: 'e2e',
@@ -16,9 +17,17 @@ module.exports = defineConfig({
     locale: 'tr-TR',
     browserName: 'chromium',
   },
-  webServer: {
-    command: 'node e2e/serve.js',
-    url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'node e2e/serve.js',
+      url: `http://localhost:${port}`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      // Senkron testleri için sahte Supabase (bkz. e2e/build.js)
+      command: 'node --no-warnings e2e/fakeSupabase.mjs',
+      url: `http://localhost:${supabasePort}/__admin/health`,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

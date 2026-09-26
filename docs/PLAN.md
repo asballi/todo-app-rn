@@ -444,12 +444,23 @@ src/sync/
   records.js                 → istemci alanları ↔ sütunlar, zaman damgası biçimi
   remote.supabase.js         → supabase-js adaptörü (auth, push/pull, Realtime)
   remote.fake.js             → bellek içi sunucu (Jest ve e2e)
+  errors.js                  → RemoteError türleri
+  scheduler.js               → ne zaman eşitleneceği
+  service.js                 → motor + zamanlayıcı + oturum + Realtime
+  index.js                   → uygulama geneli servis, useSyncState, useSyncManager
+  describe.js                → durum metinleri
+  config.js                  → .env (EXPO_PUBLIC_SUPABASE_URL / _KEY)
 src/domain/
   tagMerge.js                → X14, içe aktarmayla ortak
+  sha1.js                    → türetilmiş kimlikler için (UUID v5)
+src/components/
+  SyncBanner.jsx             → "uygulamayı güncelle" şeridi
 app/
   account.jsx                → Hesap: giriş (e-posta → kod) ve durum
 e2e/
-  syncServer.js              → iki cihaz senaryoları için Node test sunucusu
+  build.js                   → sahte Supabase'e bağlı web derlemesi
+  fakeSupabase.mjs           → Auth / RPC / Realtime taklidi (veri: src/sync/remote.fake.js)
+  sync.spec.js               → iki cihaz senaryoları
 ```
 
 ### v4 uygulama adımları
@@ -511,11 +522,19 @@ e2e/
 - [ ] Hatalı kod → "Kod hatalı ya da süresi geçmiş"; arka arkaya kod isteme → bekleme süresi.
 - [ ] Hesabı sil (iki onay) → Supabase'de Authentication → Users'tan ve tablolardan kaybolur; uygulama girişsiz, boş.
 - [ ] Mobil: uygulamayı arka plana al / geri getir → eşitlenir; saatlerce sonra açınca oturum yenilenmiş olur.
-5. ⬜ **E2E ve belgeler:** Node test sunucusu, iki tarayıcı bağlamıyla iki cihaz senaryoları (giriş, bir cihazda ekle → öbüründe gör, çevrimdışı düzenle → bağlan, çıkış → veri silinir), gerçek Supabase için elle kontrol listesi.
+5. ✅ **E2E ve belgeler:** ayrı bir HTTP adaptörü yerine **sahte Supabase** (`e2e/fakeSupabase.mjs`): uygulamadaki gerçek supabase-js adaptörü bununla konuşur, böylece istek biçimi, oturum saklama, hata eşlemesi ve Realtime da uçtan uca sınanır.
+   - Veri mantığı Jest'teki bellek içi sunucu (`src/sync/remote.fake.js`; Node doğrudan yükleyebilsin diye içindeki import uzantılı: `./errors.js`). Sunucu yalnızca biçimleri taklit eder: Auth (`/auth/v1/otp`, `verify`, `token`, `logout`, `user`; belirteçler 2100'e kadar geçerli JWT biçiminde, kod her zaman `123456`), RPC (`/rest/v1/rpc/push|pull|delete_account`, PostgREST hata gövdeleriyle: `client_outdated` → 400 P0001, oturum yok → 403 28000, kısıt → 400 23514), Realtime (`/realtime/v1/websocket`, Phoenix vsn 2.0.0: `phx_join` yanıtında bağlama kimlikleri, `heartbeat`, değişiklikte `postgres_changes`). CORS açık. Test denetimi: `/__admin/health`, `reset`, `min-schema`, `rows`.
+   - `npm run e2e`: `e2e/build.js` web derlemesini `EXPO_PUBLIC_SUPABASE_URL=http://localhost:8124` ile ve `--clear` ile alır; Playwright iki sunucu başlatır (uygulama 8123, sahte Supabase 8124; `E2E_PORT` / `E2E_SUPABASE_PORT`). Diğer testler girişsiz çalıştığı için değişmedi.
+   - `e2e/sync.spec.js` (3 senaryo, her biri kendi e-postasıyla): (1) girişsiz görev → giriş → sunucuda; ikinci cihaz (ayrı tarayıcı bağlamı) kendi göreviyle girer, iki taraf birleşir; B'de eklenen görev A'da yenilemeden 5 sn içinde görünür (Realtime), A'da tamamlanan B'ye geçer. (2) çevrimdışı ekle → Hesap'ta "1 değişiklik bekliyor" ve ağ uyarısı → bağlanınca gider; çevrimdışı çıkışta uyarı onaylanınca yalnızca Gelen Kutusu kalır; yeniden girişte gönderilmişler döner, gönderilmemiş olan dönmez. (3) geçersiz e-posta, hatalı kod, yeniden gönderme süresi; sunucu `min_schema_version = 4` → şerit ve uyarı, düzelince eşitlenir; iki onaylı hesap silme → sunucu ve yerel veri silinir.
+   - Konsol denetimi: `consoleErrors.ignore` ile bilinçli çevrimdışı / hatalı kod senaryolarında tarayıcının ağ iletileri yok sayılır; `consoleErrors.watch` ikinci cihazın sayfasını da izler.
+   - Tüm e2e takımı (24 test) üç kez üst üste geçti. Realtime aboneliği bilerek kapatılınca "anında görünür" adımı kırıldı (dakikalık çekmeye düşmediği doğrulandı).
+   - Bu adımda düzeltilen: çevrimdışı çıkışta auth-js yerel oturumu siler ama hata döndürür; adaptör bu hatayı artık fırlatmaz (önce motor bir uyarı yazıyordu).
+
+v4 tamamlandı (gerçek Supabase ile elle deneme hariç).
 
 ## Sonraki sürümler
 
-- **v4:** hesap + Supabase senkronizasyonu — planlandı, bkz. yukarıdaki bölüm.
+- **v4:** hesap + Supabase senkronizasyonu — kodu tamamlandı; gerçek Supabase projesinde elle kontrol listesi bekliyor (bkz. v4 4. adım).
 - **v4 sonrası:** istatistikler, geniş web ekranında kenar çubuğu, kontrol listesinde sürükle-bırak.
 - **Sonraya bırakılanlar (tüm sürümlerden sonra):** tam alt görevler (kendi tarihi/etiketi olan, listelerde görünebilen alt görevler).
 
@@ -524,7 +543,7 @@ e2e/
 - **Birim testleri (Jest):** `npm test` — saf mantık, store, veri taşıma, ayrıştırıcı. `America/New_York` saat diliminde koşar.
   - Bileşen testi olarak yalnızca mobil kaydırma satırı var (`react-test-renderer` + gesture-handler `jest-utils`; reanimated ve simgeler `jest.setup.js` / test dosyasında taklit edilir).
 - **SQL testleri:** `npm run test:db` — `supabase/migrations/` dosyalarını geçici bir Postgres'e uygular ve `supabase/tests/*.test.js` senaryolarını çalıştırır (bkz. v4 1. adım). Postgres sunucu programları gerekir; Docker gerekmez.
-- **Uçtan uca testler (Playwright):** `npm run e2e` — web derlemesini `dist/` klasörüne alır, küçük bir sunucuyla açar ve `e2e/*.spec.js` senaryolarını Chromium'da çalıştırır.
+- **Uçtan uca testler (Playwright):** `npm run e2e` — web derlemesini `dist/` klasörüne alır (senkron sahte Supabase'e bağlı, bkz. v4 5. adım), küçük bir sunucuyla açar ve `e2e/*.spec.js` senaryolarını Chromium'da çalıştırır.
   - İlk kez çalıştırmadan önce: `npx playwright install chromium`.
   - Saat `Cuma 25 Eylül 2026 10:00` (İstanbul) olarak sabitlenir; hatırlatıcı ve gecikme testleri saati ileri alarak çalışır.
   - Her test sonunda konsol hatası olmadığı doğrulanır; onay/uyarı pencereleri otomatik kabul edilir ve `dialogs` ile kontrol edilebilir.
