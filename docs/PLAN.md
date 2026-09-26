@@ -332,9 +332,136 @@ Task {
 
 v3 tamamlandı.
 
+## v4 — Hesap ve Supabase senkronizasyonu
+
+### Kararlar
+
+| # | Konu | Karar |
+|---|------|-------|
+| X1 | Hesap | İsteğe bağlı. Girişsiz uygulama bugünkü gibi yerel çalışır; Ayarlar → Hesap'tan giriş yapınca senkron başlar |
+| X2 | İlk giriş | Yerel veri hesaptakiyle her zaman birleşir: kimliğe göre, `updatedAt` daha yeni olan kazanır (v3-F kuralı). Soru sorulmaz |
+| X3 | Çıkış | Yerel veri silinir, cihaz yeni kurulum hâline döner; gönderilmemiş değişiklik varsa önce uyarı. Ayarlar kalır |
+| X4 | Giriş yöntemi | E-posta + 6 haneli kod (`signInWithOtp` + `verifyOtp`). Şifre ve derin bağlantı yok |
+| X5 | Zamanlama | Gönderme: yerel kuyruk, son değişiklikten 1 sn sonra. Çekme: açılışta, öne gelince, her gönderimden sonra, açıkken dakikada bir ve Realtime "değişti" sinyalinde |
+| X6 | Çakışma | Kayıt düzeyinde son güncellenen (`updatedAt`) kazanır. "Neler değişti" sorgusu cihaz saatiyle değil, sunucu sırasıyla (`server_seq`) |
+| X7 | Sunucu şeması | Koleksiyon başına tipli tablo, iç içe alanlar `jsonb`, birincil anahtar `(user_id, id)`, RLS `user_id = auth.uid()`, yazma RPC ile. SQL `supabase/migrations/` içinde |
+| X8 | Sürüm uyumu | Şema sürümü `sync_meta.min_schema_version`'dan eski uygulama senkronu durdurur ve "uygulamayı güncelleyin" der; yerel kullanım sürer |
+| X9 | Ayarlar | Cihaza özel; senkronize edilmez, çıkışta silinmez |
+| X10 | Silinmiş kayıtlar | 30 gün sonra kalıcı silinir (sunucuda ve yerelde). Temizliği kaçıran cihaz tam eşitleme yapar |
+| X11 | Hesabı sil | Bu sürümde; çift onay, önce yedek almaya bağlantı |
+| X12 | Test | Katmanlı: motor (Jest + sahte sunucu), SQL (gerçek Postgres), E2E (Node test sunucusu, iki cihaz), gerçek Supabase elle |
+| X13 | Tekrar kopyası | Tekrarın oluşturduğu sonraki görevin kimliği öncekinden türetilir (UUID v5); iki cihazda tamamlama tek kayıtta birleşir |
+| X14 | Etiket kopyası | Her çekmeden sonra aynı `nameKey`'li canlı etiketler belirleyici olarak birleştirilir |
+| X15 | Sıra | İçten dışa: SQL → istemci hazırlığı → motor → Supabase + Hesap ekranı → E2E |
+
+### Kurallar
+
+**Yapılandırma**
+- `.env` (depoya girmez): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_KEY` (publishable anahtar). Depoda `.env.example` bulunur.
+- Yapılandırma yoksa Hesap bölümü "Yapılandırılmadı" yazar; uygulama v3'teki gibi çalışır, mevcut e2e testleri değişmez.
+- Supabase e-posta şablonu kodu içermelidir (`{{ .Token }}`); varsayılan şablon bağlantı gönderir. Yerleşik e-posta servisi yalnızca proje ekibindeki adreslere, saatte birkaç e-posta gönderir; başka kullanıcılar için özel SMTP gerekir.
+
+**Giriş ve ilk birleştirme**
+- Ayarlar → Hesap → e-posta → kod ekranı. Hatalı / süresi geçmiş kod mesajı, "Kodu yeniden gönder" (bekleme süresiyle).
+- Oturum supabase-js tarafından saklanır ve yenilenir (mobilde AsyncStorage, web'de localStorage).
+- İlk girişte (imleç yokken): sunucudaki her şey çekilir, yerel kayıtlarla kimliğe göre birleştirilir (`updatedAt` yeni olan kazanır, eşitlikte sunucu), yerelde daha yeni ya da sunucuda olmayan kayıtların tümü (silinmişler dahil) gönderilir.
+- Gelen Kutusu her cihazda `"inbox"` olduğu için tek kayda iner. Aynı adlı etiketler X14 kuralıyla birleşir.
+
+**Gönderme ve çekme**
+- Girişliyken her `commit` değişen kayıtların `{ collection, id }` çiftlerini `@todo/syncQueue`'ya ekler. Kuyruk kaydın kendisini değil kimliğini tutar; gönderilen her zaman kaydın en son hâlidir. Girişsizken kuyruk tutulmaz (ilk girişte zaten her şey gönderilir).
+- Gönderme son değişiklikten 1 sn sonra toplu yapılır. Sunucunun yazdığı ya da "sende daha eskisi var" diye reddettiği kayıtlar kuyruktan çıkar (reddedilenin yenisi sonraki çekmede gelir). Ağ hatasında artan bekleme (5 sn → 5 dk); öne gelince ve "Şimdi eşitle"de hemen yeniden denenir.
+- Çekme `server_seq > imleç` olan kayıtları sayfa sayfa (500) alır. Gelen kayıt yerel kayıttan daha yeniyse (ya da yerelde yoksa) yazılır; yerel kayıt daha yeniyse yerel kalır (kuyrukta olduğu için gönderilir). İmleç `@todo/syncState` içinde.
+- Realtime yalnızca tetikleyicidir: kullanıcının tablolarındaki değişiklik olayında (250 ms birleştirerek) çekme yapılır, olayın içeriği kullanılmaz. Bağlantı koparsa dakikalık çekme boşluğu kapatır.
+- Uzaktan gelen değişiklikler store'a kuyruğa girmeden ve geri alma kaydı oluşturmadan yazılır. Geri alma kaydının dokunduğu bir kayda uzaktan değişiklik gelirse geri alma iptal olur (v3-A kuralı).
+- Hatırlatıcılar store'dan hesaplandığı için uzaktan gelen görevlerin bildirimleri her cihazda kendiliğinden kurulur / iptal edilir; kurulu bildirimler senkronize edilmez (v2 kuralı).
+- Zaman damgaları sunucudan her zaman istemcinin biçiminde (`toISOString()`, milisaniyeli `Z`) döner; karşılaştırma bu biçim üzerinden yapılır.
+
+**Sürüm uyumu**
+- Gönderme ve çekme RPC'leri uygulamanın `schemaVersion`'ını alır; `sync_meta.min_schema_version`'dan küçükse belirli bir hata döner.
+- Bu hatada senkron durur; Ayarlar → Hesap'ta ve bir şeritte "Senkronizasyon için uygulamayı güncelleyin" görünür. Yerel kullanım sürer, kuyruk bekler.
+- Kayıtlara alan ekleyen her SQL migration'ı `min_schema_version`'ı da yükseltir. v4'te istemci şeması 3'te kalır (kayıt alanı değişmiyor); başlangıç değeri 3.
+
+**Çıkış ve hesap silme**
+- Çıkış: önce bir gönderim denenir. Kuyruk hâlâ doluysa "n değişiklik henüz gönderilmedi. Çıkarsanız kaybolacak." onayı. Sonra oturum kapanır; `@todo/tasks`, `categories`, `tags`, `taskTags`, `syncQueue`, `syncState` silinir, Gelen Kutusu yeniden oluşturulur; bildirim eşitlemesi kurulu hatırlatıcıları iptal eder. `@todo/settings` kalır.
+- Hesabı sil: iki onay (ilkinde "Önce yedek al" bağlantısı → Ayarlar → Yedekleme). `delete_account()` RPC `auth.users` satırını siler, tablolar `on delete cascade` ile temizlenir. Ardından çıkış akışı uyarısız çalışır.
+
+**Silinmiş kayıtların temizliği**
+- Sunucu: her satırın `server_updated_at`'ını tetikleyici yazar (cihaz saati değil). `pg_cron` günde bir `purge_deleted()` çalıştırır: `deleted_at` dolu ve `server_updated_at`'ı 30 günden eski satırlar kalıcı silinir; silinenlerin en büyük `server_seq`'i kullanıcının `purged_seq`'i olur.
+- Çekme `purged_seq`'i de döndürür. İmleç 0'dan büyük ve `purged_seq`'ten küçükse cihaz bazı silmeleri kaçırmış olabilir → tam eşitleme: her şey baştan çekilir; yerelde olup sunucuda olmayan ve kuyrukta olmayan kayıtlar kalıcı silinir; kuyruktakiler normal gönderilir (silmeden daha yeni düzenlemedir, "son güncellenen kazanır"a göre geri gelmeleri doğrudur).
+- Yerel: açılışta `deletedAt`'ı 30 günden eski ve kuyrukta olmayan kayıtlar kalıcı silinir (girişsiz kullanımda da).
+- `nextTaskId` temizlenmiş bir görevi gösteriyorsa "sonraki görev yok" sayılır.
+- Bilinen sınır: 30 günden eski bir yedek içe aktarılırsa, arada silinip temizlenmiş kayıtlar geri gelir.
+
+**Kopyaları önleme**
+- X13: sonraki görevin kimliği `uuidV5(task.id + ':next')`. İşaret kaldırılınca bu kayıt soft delete edilir; yeniden tamamlanınca aynı kimlikli kayıt yeni alanlarla ve `deletedAt: null` ile yazılır.
+- X14: çekmeden sonra aynı `nameKey`'li canlı etiketlerden `createdAt`'ı en eski olan kalır (eşitlikte küçük `id`), rengi onun rengidir. Diğerlerinin bağları mevcut bağ kaydının `tagId`'si değiştirilerek taşınır (yeni kimlik üretilmez, iki cihaz aynı kayıtları yazar); görev kazanan etikete zaten bağlıysa eski bağ soft delete edilir. Kopya etiket soft delete edilir. Geri alma şeridi çıkmaz. Aynı fonksiyonu içe aktarma da kullanır.
+- Kategorilerde ad benzersizliği yok (K4); aynı adlı kategoriler birleştirilmez.
+
+**Durum**
+- Ayarlar → Hesap: e-posta, son eşitleme zamanı, bekleyen değişiklik sayısı, varsa hata / "güncelleyin" uyarısı, "Şimdi eşitle", "Çıkış yap", "Hesabı sil".
+
+### Sunucu şeması (özet)
+
+```sql
+-- tasks, categories, tags, task_tags için ortak sütunlar:
+user_id uuid not null references auth.users on delete cascade,
+id text not null,                    -- "inbox" UUID değil, bu yüzden text
+created_at, updated_at timestamptz not null,
+deleted_at timestamptz,
+server_seq bigint not null,          -- tetikleyici: nextval('sync_seq')
+server_updated_at timestamptz not null, -- tetikleyici: now()
+primary key (user_id, id)
+
+-- tasks: title, notes, category_id, due_date date, due_time text ("HH:mm"),
+--        priority smallint check (priority between 0 and 3), completed_at,
+--        reminders jsonb, recurrence jsonb, next_task_id, checklist jsonb
+-- categories: name, color, icon, is_system, sort_order
+-- tags: name, name_key, color
+-- task_tags: task_id, tag_id
+
+sync_meta (min_schema_version int)                -- tek satır, herkes okur
+sync_users (user_id, purged_seq bigint)           -- temizlik sınırı
+
+push(client_schema int, changes jsonb)   -- insert … on conflict do update … where excluded.updated_at > t.updated_at
+pull(client_schema int, since bigint, lim int) → { records, next, purged_seq }
+purge_deleted()                          -- pg_cron, günlük
+delete_account()
+```
+
+- RPC'ler `security invoker`; RLS her tabloda `user_id = auth.uid()` (`purge_deleted` ve `delete_account` `security definer`).
+- `push` kullanıcı başına `pg_advisory_xact_lock` alır: aynı kullanıcının yazmaları sırayla işlenir, böylece `server_seq`'ler işlem sırasıyla görünür olur ve çekme imleci arada kalan bir kaydı atlamaz.
+
+### Klasör yapısı eklemeleri
+
+```
+supabase/
+  migrations/                → tablolar, RLS, tetikleyiciler, RPC'ler
+  tests/                     → npm run test:db (gerçek Postgres + auth taklidi)
+src/sync/
+  engine.js                  → kuyruk, gönderme/çekme, ilk birleştirme, tam eşitleme, çıkış (platformdan bağımsız)
+  queue.js
+  records.js                 → istemci alanları ↔ sütunlar, zaman damgası biçimi
+  remote.supabase.js         → supabase-js adaptörü (auth, push/pull, Realtime)
+  remote.fake.js             → bellek içi sunucu (Jest ve e2e)
+src/domain/
+  tagMerge.js                → X14, içe aktarmayla ortak
+app/
+  account.jsx                → Hesap: giriş (e-posta → kod) ve durum
+e2e/
+  syncServer.js              → iki cihaz senaryoları için Node test sunucusu
+```
+
+### v4 uygulama adımları
+
+1. ⬜ **Sunucu şeması:** `supabase/migrations/` (tablolar, RLS, `server_seq` / `server_updated_at` tetikleyicileri, `push` / `pull`, `purged_seq` ile `purge_deleted`, `delete_account`, `sync_meta`). `npm run test:db`: migration'lar yerel Postgres 16'ya uygulanır, küçük bir `auth` taklidiyle RLS, eski `updated_at` reddi, sıra, temizlik ve hesap silme denenir.
+2. ⬜ **İstemci hazırlığı (Supabase olmadan):** belirleyici `nextTaskId` (X13), etiket birleştirme (X14, içe aktarmayla ortak), yerel 30 gün temizliği (X10), `commit`'in gönderme kuyruğuna yazması. Görünür değişiklik yok.
+3. ⬜ **Senkron motoru:** `src/sync/`, `remote` arayüzü ve sahte sunucu; gönderme, çekme, ilk birleştirme, tam eşitleme, sürüm kilidi, çıkış. Jest.
+4. ⬜ **Supabase + Hesap ekranı:** `@supabase/supabase-js`, oturum saklama, Ayarlar → Hesap (giriş, durum, Şimdi eşitle, Çıkış, Hesabı sil), Realtime tetikleyici, zamanlama.
+5. ⬜ **E2E ve belgeler:** Node test sunucusu, iki tarayıcı bağlamıyla iki cihaz senaryoları (giriş, bir cihazda ekle → öbüründe gör, çevrimdışı düzenle → bağlan, çıkış → veri silinir), gerçek Supabase için elle kontrol listesi.
+
 ## Sonraki sürümler
 
-- **v4:** hesap + Supabase senkronizasyonu.
+- **v4:** hesap + Supabase senkronizasyonu — planlandı, bkz. yukarıdaki bölüm.
 - **v4 sonrası:** istatistikler, geniş web ekranında kenar çubuğu, kontrol listesinde sürükle-bırak.
 - **Sonraya bırakılanlar (tüm sürümlerden sonra):** tam alt görevler (kendi tarihi/etiketi olan, listelerde görünebilen alt görevler).
 
