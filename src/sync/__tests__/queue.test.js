@@ -71,3 +71,15 @@ test('engelli kayıt gönderilmez ama bekleyen sayılır; yeniden değişince en
   expect(syncQueue.blockedCount()).toBe(0);
   expect(syncQueue.snapshot().map(i => i.id).sort()).toEqual(['a', 'b']);
 });
+
+test('dinleyiciler değişikliklerde çağrılır', async () => {
+  const calls = [];
+  const unsubscribe = syncQueue.subscribe(() => calls.push(syncQueue.size()));
+  await syncQueue.enqueue({ tasks: [task('a')] }); // etkin değil: çağrılmaz
+  await syncQueue.activate();
+  await syncQueue.enqueue({ tasks: [task('a')] });
+  await syncQueue.ack(syncQueue.snapshot());
+  unsubscribe();
+  await syncQueue.enqueue({ tasks: [task('b')] });
+  expect(calls).toEqual([0, 1, 0]);
+});

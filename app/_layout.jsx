@@ -6,6 +6,8 @@ import { useTodoStore } from '../src/store/useTodoStore';
 import { useReminders } from '../src/notifications/useReminders';
 import ReminderBanner from '../src/components/ReminderBanner';
 import UndoBar from '../src/components/UndoBar';
+import SyncBanner from '../src/components/SyncBanner';
+import { useSyncManager } from '../src/sync';
 import GestureRoot from '../src/components/GestureRoot';
 import { ThemeProvider, useThemedStyles, useTheme } from '../src/theme';
 import { strings } from '../src/strings';
@@ -59,9 +61,12 @@ function Root() {
         <Stack.Screen name="tag-form" options={modal} />
         <Stack.Screen name="manage-tags" options={modal} />
         <Stack.Screen name="settings" options={modal} />
+        <Stack.Screen name="account" options={modal} />
       </Stack>
       <ReminderManager />
+      <SyncManager />
       <ReminderBanner />
+      <SyncBanner />
       <UndoBar />
     </>
   );
@@ -70,6 +75,12 @@ function Root() {
 // Veriler hazır olduktan sonra bildirim eşitlemesini başlatır.
 function ReminderManager() {
   useReminders();
+  return null;
+}
+
+// Veriler hazır olduktan sonra senkronu başlatır (yapılandırma yoksa bir şey yapmaz).
+function SyncManager() {
+  useSyncManager();
   return null;
 }
 

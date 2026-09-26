@@ -29,6 +29,8 @@ function validate(collection, row) {
 export function createFakeServer({ minSchemaVersion = 3, now = () => new Date() } = {}) {
   let seq = 0;
   const users = new Map(); // userId → { tables: { [collection]: Map<id, row> }, purgedSeq }
+  const accounts = new Map(); // e-posta → userId
+  const changeListeners = new Set(); // { userId, listener } (Realtime taklidi)
 
   function user(userId) {
     if (!users.has(userId)) {
@@ -71,6 +73,11 @@ export function createFakeServer({ minSchemaVersion = 3, now = () => new Date() 
           delete stored.user_id;
           tables[collection].set(row.id, { ...stored, server_seq: ++seq, server_updated_at: now().toISOString() });
           written[collection].push(row.id);
+        }
+      }
+      if (Object.values(written).some(ids => ids.length)) {
+        for (const entry of changeListeners) {
+          if (entry.userId === userId) setTimeout(entry.listener, 0);
         }
       }
       return { written };
@@ -118,6 +125,20 @@ export function createFakeServer({ minSchemaVersion = 3, now = () => new Date() 
     deleteAccount(userId) {
       if (!userId) throw new RemoteError('unauthenticated', 'not_authenticated');
       users.delete(userId);
+      for (const [email, id] of accounts) if (id === userId) accounts.delete(email);
+    },
+
+    // Aynı e-posta her zaman aynı kullanıcıdır (Supabase Auth gibi).
+    userIdFor(email) {
+      const key = email.trim().toLowerCase();
+      if (!accounts.has(key)) accounts.set(key, `user-${accounts.size + 1}-${key}`);
+      return accounts.get(key);
+    },
+
+    onChange(userId, listener) {
+      const entry = { userId, listener };
+      changeListeners.add(entry);
+      return () => changeListeners.delete(entry);
     },
 
     // Kullanıcıya bağlı adaptör: motorun beklediği arayüz (bkz. engine.js).
@@ -141,6 +162,69 @@ export function createFakeServer({ minSchemaVersion = 3, now = () => new Date() 
         async deleteAccount() {
           remote.check('deleteAccount');
           server.deleteAccount(userId);
+        },
+      };
+      return remote;
+    },
+
+    // Girişi de taklit eden adaptör (servis ve e2e için): e-postaya "gönderilen"
+    // kod her zaman `code`'dur. Motorun çağrıları oturumdaki kullanıcıyla yapılır.
+    createRemote({ code = '123456' } = {}) {
+      let session = null;
+      const sessionListeners = new Set();
+      const sent = new Set();
+      const setSession = next => {
+        session = next;
+        for (const listener of sessionListeners) listener(session);
+      };
+      const remote = {
+        online: true,
+        calls: [],
+        check(name) {
+          remote.calls.push(name);
+          if (!remote.online) throw new RemoteError('network', 'offline');
+        },
+        async sendCode(email) {
+          remote.check('sendCode');
+          sent.add(email.trim().toLowerCase());
+        },
+        async verifyCode(email, token) {
+          remote.check('verifyCode');
+          const key = email.trim().toLowerCase();
+          if (!sent.has(key) || token !== code) throw new RemoteError('invalidCode', 'invalid code');
+          sent.delete(key);
+          setSession({ userId: server.userIdFor(key), email: key });
+          return session;
+        },
+        async getSession() {
+          return session;
+        },
+        onSessionChange(listener) {
+          sessionListeners.add(listener);
+          return () => sessionListeners.delete(listener);
+        },
+        async signOut() {
+          remote.calls.push('signOut');
+          setSession(null);
+        },
+        async push(clientSchema, changes) {
+          remote.check('push');
+          return server.push(session?.userId, clientSchema, JSON.parse(JSON.stringify(changes)));
+        },
+        async pull(clientSchema, since, lim) {
+          remote.check('pull');
+          return server.pull(session?.userId, clientSchema, since, lim);
+        },
+        async deleteAccount() {
+          remote.check('deleteAccount');
+          server.deleteAccount(session?.userId);
+        },
+        subscribeChanges(userId, listener) {
+          return server.onChange(userId, listener);
+        },
+        // Test yardımcısı: oturumun sunucu tarafında düşmesi (ör. yenileme anahtarı iptal).
+        expireSession() {
+          setSession(null);
         },
       };
       return remote;

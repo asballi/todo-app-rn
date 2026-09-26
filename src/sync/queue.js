@@ -17,16 +17,25 @@ import { KEYS, readJson, writeJsonMany, withKeyLock } from '../data/storage';
 
 const EMPTY = { active: false, seq: 0, entries: {}, blocked: {} };
 let state = EMPTY;
+// Kuyruk değişince (ekleme, gönderilme, engelleme, sıfırlama) çağrılır:
+// zamanlayıcı gönderimi planlar, arayüz bekleyen sayısını günceller.
+const listeners = new Set();
 
 const entryKey = (collection, id) => `${collection}/${id}`;
 
 function save() {
+  for (const listener of listeners) listener();
   return withKeyLock(KEYS.syncQueue, () => writeJsonMany([[KEYS.syncQueue, state]]));
 }
 
 export const syncQueue = {
   async load() {
     state = { ...EMPTY, ...(await readJson(KEYS.syncQueue, EMPTY)) };
+  },
+
+  subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
   },
 
   isActive() {

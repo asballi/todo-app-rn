@@ -3,6 +3,9 @@
 //   unauthenticated → oturum yok ya da süresi dolmuş
 //   rejected        → kayıt sunucu kısıtına uymuyor (Postgres 22xxx / 23xxx)
 //   network         → bağlantı ya da sunucu hatası; sonra yeniden denenir
+// Giriş sırasında ayrıca:
+//   invalidCode     → kod hatalı ya da süresi geçmiş
+//   rateLimited     → çok sık kod istendi
 export class RemoteError extends Error {
   constructor(kind, message, detail = null) {
     super(message);

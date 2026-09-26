@@ -480,7 +480,37 @@ e2e/
    - Çıkış: `force`'suz önce eşitleme; bekleyen varsa `{ signedOut: false, pending }`. `force` ile sürmekte olan eşitleme bir sonraki adımında durdurulur (çıkıştan sonra gönderim yapılmaz), `remote.signOut`, kuyruk sıfırlanır, store `resetLocalData` (yalnızca Gelen Kutusu), `@todo/syncState` silinir.
    - Gelen Kutusu'nun zaman damgaları artık en eski ana (`1970-01-01`) sabit: yeni kurulan ya da çıkışta sıfırlanan cihazın Gelen Kutusu, başka cihazda yeniden adlandırılmış olanın üzerine yazmaz. (Eski kurulumlardaki hiç düzenlenmemiş Gelen Kutusu kurulum zamanını taşır; bu durumda yalnızca varsayılan ad yarışır.)
    - Testler (`src/sync/__tests__/engine.test.js`, 25 senaryo): her cihaz `jest.isolateModules` + bellek içi AsyncStorage ile kendi store / kuyruk / motor kopyasını alır, sunucu ortaktır. İlk giriş birleştirmesi, yayılma, çakışma, gönderim sırasında düzenleme, çevrimdışı, reddedilen kayıt, sürüm kilidi, tam eşitleme, tekrar ve etiket kopyaları, çıkış / hesap silme ve çıkışın sürmekte olan eşitlemeyi durdurması. Motor ve store bilerek bozularak testlerin yakaladığı doğrulandı (7 bozulma).
-4. ⬜ **Supabase + Hesap ekranı:** `@supabase/supabase-js`, oturum saklama, Ayarlar → Hesap (giriş, durum, Şimdi eşitle, Çıkış, Hesabı sil), Realtime tetikleyici, zamanlama.
+4. ✅ **Supabase + Hesap ekranı:**
+   - `src/sync/remote.supabase.js`: `@supabase/supabase-js` adaptörü. Oturum AsyncStorage'da (web'de localStorage üzerinden), `detectSessionInUrl: false`. Giriş `signInWithOtp` / `verifyOtp({ type: 'email' })`; çıkış yalnızca bu cihazdan (`scope: 'local'`). RPC ve giriş hataları `RemoteError` türlerine çevrilir (`client_outdated` → outdated, `28000` / `PGRST3xx` / 401 → unauthenticated, `22xxx` / `23xxx` → rejected, 429 → rateLimited, diğer 4xx girişte → invalidCode, gerisi network). Realtime: dört tabloda `user_id=eq.<id>` filtreli `postgres_changes`; olay ve bağlantı (`SUBSCRIBED`) yalnızca "şimdi çek" sinyali. Mobilde `react-native-url-polyfill` (`polyfills.native.js`); arka planda oturum yenileme durur.
+   - `src/sync/scheduler.js`: yerel değişiklikten en geç 1 sn sonra (ilk bekleyen değişiklikten sayılır, yazarken ertelenmez — planda "son değişiklikten" diyordu; otomatik kaydetme 0,5 sn'de bir yazdığı için gönderim hiç gitmeyebilirdi), Realtime sinyalinden 250 ms sonra, başlatınca / öne gelince / "Şimdi eşitle"de hemen, açıkken dakikada bir; ağ hatasında 5 sn → 5 dk artan bekleme. Arka planda durur.
+   - `src/sync/service.js`: motor + zamanlayıcı + oturum + Realtime. Açılışta kayıtlı oturum sürdürülür; oturum var ama motor başlamamışsa (giriş yarıda kalmış) ilk birleştirme tamamlanır. Oturum düşerse (yenileme anahtarı iptal vb.) cihaz hesaba bağlı kalır, kuyruk bekler, "Oturumun sona erdi" ile yeniden giriş istenir; aynı hesapla girince kaldığı yerden sürer, başka hesapla giriş reddedilir (önce çıkış). Kuyruk `subscribe` ile değişiklikleri bildirir.
+   - `src/sync/index.js`: uygulama genelinde tek servis (`getSyncService`, yapılandırma yoksa null), `useSyncState`, kök düzende `useSyncManager` (init + AppState).
+   - Arayüz: Ayarlar'ın başında "Hesap" satırı (özet: yapılandırılmadı / giriş yapılmadı / `<e-posta>` ile eşitleniyor / oturum sona erdi) → `app/account.jsx`: e-posta → 6 haneli kod (60 sn'de bir yeniden gönderme, e-postayı değiştir), durum satırları (`src/sync/describe.js`: eşitleniyor / son eşitleme "az önce · n dk önce · 14:05 · 24 Eyl 14:05" / bekleyen / kabul edilmeyen / hata / güncelleme gerekli), "Şimdi eşitle", "Çıkış yap" (bekleyen varsa "Yine de çık" onayı), "Önce yedek al" (Ayarlar'a döner) ve iki onaylı "Hesabı sil". Sürüm kilidinde üstte kapatılabilir `SyncBanner`.
+   - Yapılandırma: `.env` (`.env.example`). **`.env` değişince Metro önbelleği temizlenmeli** (`npx expo start --clear`, dışa aktarmada `--clear`); yoksa eski değerler pakette kalır.
+   - Testler: zamanlayıcı (sahte saat), adaptör (sahte Supabase istemcisiyle çağrı biçimi ve hata eşlemesi), servis (sahte sunucunun giriş taklidiyle: giriş, hatalı kod, zamanlayıcı + Realtime ile iki cihaz, çıkış, oturum düşmesi, başka hesap, açılışta sürdürme, yarım kalan giriş, hesap silme), durum metinleri. Web ve Android paketleri derlendi; yapılandırmasız e2e testleri değişmeden geçiyor. Web'de yapılandırılmış (erişilemeyen adresli) sürümle giriş formu ve ağ hatası mesajı elle görüldü. Gerçek Supabase ile henüz denenmedi (aşağıdaki kontrol listesi).
+
+#### Supabase kurulumu
+
+1. supabase.com'da proje oluştur.
+2. SQL'i uygula — ikisinden biri:
+   - Panel → SQL Editor: `supabase/migrations/` altındaki dosyaları **ad sırasıyla** yapıştırıp çalıştır.
+   - Supabase CLI: `supabase init` (yalnızca `supabase/config.toml` oluşturur; mevcut `migrations/` klasörüne dokunmaz), `supabase link --project-ref <kimlik>`, `supabase db push`.
+3. Authentication → Emails → şablonlar: **Magic Link** ve **Confirm signup** şablonlarının gövdesine kodu ekle, ör. `<p>Giriş kodun: <strong>{{ .Token }}</strong></p>` (varsayılan şablon bağlantı gönderir; yeni kullanıcıya "Confirm signup" gidebilir). Authentication → Providers → Email açık olmalı; e-posta OTP uzunluğu 6 hane olmalı.
+4. Yerleşik e-posta servisi yalnızca proje ekibindeki adreslere, saatte birkaç e-posta gönderir. Başka adresler için Authentication → SMTP ayarlarından kendi SMTP'ni tanımla.
+5. Project Settings → API'den URL ve publishable (anon) anahtarı `.env`'ye yaz, `npx expo start --clear`.
+6. Kontrol: SQL Editor'da `select * from cron.job;` → `purge-deleted` işi görünmeli (yoksa Database → Extensions'tan pg_cron'u açıp ikinci migration'ı yeniden çalıştır). Database → Publications → `supabase_realtime` içinde dört tablo olmalı.
+
+#### Gerçek Supabase ile elle kontrol listesi
+
+- [ ] Web'de giriş: e-posta → kod gelir → giriş yapılır; girişten önce eklenen görevler Supabase Table Editor'da `tasks` tablosunda görünür.
+- [ ] Telefonda (ya da ikinci tarayıcıda) aynı hesapla giriş: iki cihazın görevleri birleşir, Gelen Kutusu adı korunur.
+- [ ] Bir cihazda görev ekle / tamamla / sil → diğerinde birkaç saniye içinde görünür (Realtime); Realtime kapalıysa en geç 1 dk.
+- [ ] Uçak modu / ağ kapalı: düzenle → Hesap'ta "n değişiklik bekliyor" → ağ açılınca gider.
+- [ ] Çevrimdışıyken "Çıkış yap" → "gönderilmedi" uyarısı; vazgeç. Çevrimiçiyken çıkış → yalnızca Gelen Kutusu kalır; tekrar giriş → görevler geri gelir.
+- [ ] SQL: `update sync_meta set min_schema_version = 4;` → uygulamada "güncelle" şeridi ve Hesap'ta uyarı; `= 3` ile geri al, "Şimdi eşitle" düzelir.
+- [ ] Hatalı kod → "Kod hatalı ya da süresi geçmiş"; arka arkaya kod isteme → bekleme süresi.
+- [ ] Hesabı sil (iki onay) → Supabase'de Authentication → Users'tan ve tablolardan kaybolur; uygulama girişsiz, boş.
+- [ ] Mobil: uygulamayı arka plana al / geri getir → eşitlenir; saatlerce sonra açınca oturum yenilenmiş olur.
 5. ⬜ **E2E ve belgeler:** Node test sunucusu, iki tarayıcı bağlamıyla iki cihaz senaryoları (giriş, bir cihazda ekle → öbüründe gör, çevrimdışı düzenle → bağlan, çıkış → veri silinir), gerçek Supabase için elle kontrol listesi.
 
 ## Sonraki sürümler

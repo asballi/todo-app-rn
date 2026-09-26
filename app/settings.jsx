@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 import DateInput from '../src/components/DateInput';
 import Chip from '../src/components/Chip';
 import { confirm, showError } from '../src/components/confirm';
@@ -9,7 +10,9 @@ import { backupFileName } from '../src/data/backup';
 import { useTodoStore, THEME_MODES } from '../src/store/useTodoStore';
 import { useNotificationPermission } from '../src/notifications/useReminders';
 import { strings } from '../src/strings';
-import { useThemedStyles } from '../src/theme';
+import { useThemedStyles, useTheme } from '../src/theme';
+import { useSyncState } from '../src/sync';
+import { summarizeAccount } from '../src/sync/describe';
 
 const t = strings.settings;
 const THEME_ICONS = { system: 'smartphone', light: 'sun', dark: 'moon' };
@@ -54,6 +57,8 @@ export default function SettingsScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: t.title }} />
+
+      <AccountRow />
 
       <Text style={styles.label}>{t.theme}</Text>
       <View style={styles.card}>
@@ -108,7 +113,36 @@ export default function SettingsScreen() {
   );
 }
 
+// Hesap özeti; dokununca Hesap ekranı açılır (v4).
+function AccountRow() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const state = useSyncState();
+  return (
+    <>
+      <Text style={styles.label}>{strings.account.section}</Text>
+      <TouchableOpacity
+        style={[styles.card, styles.accountRow]}
+        onPress={() => router.push('/account')}
+        accessibilityRole="button"
+        accessibilityLabel={`${strings.account.open}: ${summarizeAccount(state)}`}
+      >
+        <Feather name={state.signedIn ? 'cloud' : 'cloud-off'} size={20} color={colors.primary} />
+        <Text style={[styles.text, styles.accountText]}>{summarizeAccount(state)}</Text>
+        <Feather name="chevron-right" size={20} color={colors.muted} />
+      </TouchableOpacity>
+    </>
+  );
+}
+
 const makeStyles = colors => StyleSheet.create({
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  accountText: {
+    flex: 1,
+  },
   content: {
     padding: 20,
     gap: 10,
