@@ -50,7 +50,7 @@ async function migrateToV2(now) {
   // sürümü 2 yapmadığı için bir sonraki açılışta baştan tekrarlanır.
   await writeJsonMany([
     [KEYS.tasks, tasks],
-    [KEYS.categories, [createInbox(now)]],
+    [KEYS.categories, [createInbox()]],
     [KEYS.tags, []],
     [KEYS.taskTags, []],
     [KEYS.schemaVersion, 2],

@@ -129,10 +129,17 @@ export function softDelete(record, now = new Date()) {
   return { ...record, deletedAt: ts, updatedAt: ts };
 }
 
-export function createInbox(now = new Date()) {
+// Gelen Kutusu her cihazda kendiliğinden oluşur. Zaman damgaları en eski ana
+// sabitlenir: senkronda (X2) yeni kurulan bir cihazın Gelen Kutusu, başka bir
+// cihazda yeniden adlandırılmış olanın üzerine yazmasın; her düzenleme onu yener.
+export const INBOX_CREATED_AT = new Date(0).toISOString();
+
+export function createInbox() {
   return {
-    ...baseRecord(now),
     id: INBOX_ID,
+    createdAt: INBOX_CREATED_AT,
+    updatedAt: INBOX_CREATED_AT,
+    deletedAt: null,
     name: strings.defaults.inboxName,
     color: '#6c63ff',
     icon: 'inbox',

@@ -54,3 +54,20 @@ test('kimlikte "/" olsa da doğru ayrıştırır', async () => {
   await syncQueue.enqueue({ tasks: [task('x/y')] });
   expect(syncQueue.snapshot()).toEqual([{ collection: 'tasks', id: 'x/y', seq: 1 }]);
 });
+
+test('engelli kayıt gönderilmez ama bekleyen sayılır; yeniden değişince engel kalkar', async () => {
+  await syncQueue.activate();
+  await syncQueue.enqueue({ tasks: [task('a'), task('b')] });
+  await syncQueue.block(syncQueue.snapshot().filter(i => i.id === 'a'));
+  expect(syncQueue.snapshot().map(i => i.id)).toEqual(['b']);
+  expect(syncQueue.size()).toBe(2);
+  expect(syncQueue.blockedCount()).toBe(1);
+  expect(syncQueue.has('tasks', 'a')).toBe(true);
+
+  await syncQueue.load();
+  expect(syncQueue.blockedCount()).toBe(1);
+
+  await syncQueue.enqueue({ tasks: [task('a')] });
+  expect(syncQueue.blockedCount()).toBe(0);
+  expect(syncQueue.snapshot().map(i => i.id).sort()).toEqual(['a', 'b']);
+});

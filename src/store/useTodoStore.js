@@ -17,6 +17,7 @@ import { expiredIds } from '../data/purge';
 import { mergeDuplicateTags } from '../domain/tagMerge';
 import { syncQueue } from '../sync/queue';
 import * as models from '../domain/models';
+import { createInbox } from '../domain/models';
 import { strings } from '../strings';
 
 const u = strings.undo;
@@ -95,7 +96,8 @@ export const useTodoStore = create((set, get) => {
   // undoLabel verilirse değişen kayıtların önceki hâli geri alma için saklanır;
   // verilmezse ve değişiklik saklanan kayıtlardan birine dokunuyorsa geri alma
   // iptal edilir (sonraki bir düzenlemenin üzerine yazılmasın).
-  async function commit(changes, undoLabel = null) {
+  // enqueue: false yalnızca sunucudan gelen değişiklikler içindir (geri gönderilmez).
+  async function commit(changes, undoLabel = null, { enqueue = true } = {}) {
     set(state => {
       const next = {};
       let lastUndo = state.lastUndo;
@@ -119,7 +121,7 @@ export const useTodoStore = create((set, get) => {
     try {
       // Önce kuyruk: depoya yazılıp kuyruğa girmeyen bir değişiklik hiç gönderilmezdi;
       // tersi (kuyrukta olup depoda eski kalan) yalnızca eski hâlin gönderilmesidir.
-      await syncQueue.enqueue(changes);
+      if (enqueue) await syncQueue.enqueue(changes);
       await Promise.all(
         Object.entries(changes).map(([collection, records]) =>
           REPOSITORIES[collection].upsertMany(records),
@@ -317,6 +319,47 @@ export const useTodoStore = create((set, get) => {
       set({ settings });
       await settingsRepository.save(settings);
       return settings;
+    },
+
+    // --- Senkron (v4) ---
+
+    // Sunucudan gelen kayıtları yazar: yalnızca yerelde olmayan ya da yereldekinden
+    // daha yeni (updatedAt) olanları (X6). Kuyruğa girmez, geri alma şeridi
+    // oluşturmaz; geri alma kaydının dokunduğu bir kayda gelirse geri almayı iptal eder.
+    async applyRemote(changes) {
+      const accepted = {};
+      for (const [collection, records] of Object.entries(changes)) {
+        const local = new Map(get()[collection].map(r => [r.id, r]));
+        accepted[collection] = records.filter(r => !local.has(r.id) || r.updatedAt > local.get(r.id).updatedAt);
+      }
+      if (hasChanges(accepted)) await commit(accepted, null, { enqueue: false });
+      return accepted;
+    },
+
+    // Kayıtları kalıcı siler (tam eşitlemede sunucuda temizlenmiş olanlar, X10).
+    async removeRecords(idsByCollection) {
+      const entries = Object.entries(idsByCollection).filter(([, ids]) => ids.length);
+      if (entries.length === 0) return;
+      set(state => {
+        const next = {};
+        for (const [collection, ids] of entries) {
+          const removed = new Set(ids);
+          next[collection] = state[collection].filter(r => !removed.has(r.id));
+        }
+        const touched = Object.fromEntries(entries.map(([c, ids]) => [c, ids.map(id => ({ id }))]));
+        const lastUndo = state.lastUndo && touchesSnapshot(state.lastUndo.snapshot, touched) ? null : state.lastUndo;
+        return { ...next, lastUndo };
+      });
+      await Promise.all(entries.map(([collection, ids]) => REPOSITORIES[collection].removeMany(ids)));
+    },
+
+    // Çıkışta (X3): tüm kayıtlar silinir, yalnızca Gelen Kutusu kalır. Ayarlar kalır.
+    async resetLocalData() {
+      const empty = { tasks: [], categories: [createInbox()], tags: [], taskTags: [] };
+      set({ ...empty, lastUndo: null });
+      await Promise.all(
+        Object.entries(REPOSITORIES).map(([collection, repository]) => repository.replaceAll(empty[collection])),
+      );
     },
 
     // --- Kategoriler ---
