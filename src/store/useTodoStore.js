@@ -7,12 +7,15 @@ import {
   taskTagRepository,
   settingsRepository,
 } from '../data/repositories';
-import { INBOX_ID } from '../domain/ids';
+import { INBOX_ID, nextOccurrenceId } from '../domain/ids';
 import { tagKey } from '../domain/tags';
 import { nextDueDate } from '../domain/recurrence';
 import { DEFAULT_REMINDER_TIME } from '../domain/reminders';
 import { isValidTime } from '../domain/dates';
 import { parseBackup, mergeBackup, buildBackup, hasChanges } from '../data/backup';
+import { expiredIds } from '../data/purge';
+import { mergeDuplicateTags } from '../domain/tagMerge';
+import { syncQueue } from '../sync/queue';
 import * as models from '../domain/models';
 import { strings } from '../strings';
 
@@ -37,6 +40,39 @@ function mergeById(list, records) {
   const byId = new Map(list.map(r => [r.id, r]));
   for (const record of records) byId.set(record.id, record);
   return [...byId.values()];
+}
+
+function applyChanges(state, changes) {
+  const next = { ...state };
+  for (const [collection, records] of Object.entries(changes)) {
+    next[collection] = mergeById(state[collection], records);
+  }
+  return next;
+}
+
+// İki değişiklik kümesini birleştirir; aynı kayıt ikisinde de varsa sonraki kazanır.
+function combineChanges(a, b) {
+  const result = { ...a };
+  for (const [collection, records] of Object.entries(b)) {
+    if (records.length) result[collection] = mergeById(result[collection] ?? [], records);
+  }
+  return result;
+}
+
+// Açılışta süresi dolmuş silinmiş kayıtları kalıcı siler (X10). Kuyrukta
+// bekleyenler sunucuya ulaşana kadar kalır.
+async function purgeExpired(loaded, now = new Date()) {
+  const result = { ...loaded };
+  await Promise.all(
+    Object.entries(REPOSITORIES).map(async ([collection, repository]) => {
+      const ids = expiredIds(loaded[collection], now, id => syncQueue.has(collection, id));
+      if (ids.length === 0) return;
+      const removed = new Set(ids);
+      result[collection] = loaded[collection].filter(r => !removed.has(r.id));
+      await repository.removeMany(ids);
+    }),
+  );
+  return result;
 }
 
 export const initialState = {
@@ -81,6 +117,9 @@ export const useTodoStore = create((set, get) => {
       return { ...next, lastUndo };
     });
     try {
+      // Önce kuyruk: depoya yazılıp kuyruğa girmeyen bir değişiklik hiç gönderilmezdi;
+      // tersi (kuyrukta olup depoda eski kalan) yalnızca eski hâlin gönderilmesidir.
+      await syncQueue.enqueue(changes);
       await Promise.all(
         Object.entries(changes).map(([collection, records]) =>
           REPOSITORIES[collection].upsertMany(records),
@@ -141,8 +180,10 @@ export const useTodoStore = create((set, get) => {
           tagRepository.list(),
           taskTagRepository.list(),
           settingsRepository.get(initialState.settings),
+          syncQueue.load(),
         ]);
-        set({ status: 'ready', tasks, categories, tags, taskTags, settings });
+        const records = await purgeExpired({ tasks, categories, tags, taskTags });
+        set({ status: 'ready', ...records, settings });
       } catch (e) {
         console.warn('Veriler yüklenemedi', e);
         set({ status: 'error', error: e.message });
@@ -171,6 +212,9 @@ export const useTodoStore = create((set, get) => {
 
     // Tekrarlayan görev tamamlanınca sonraki tekrar oluşturulur (etiketleriyle).
     // İşaret kaldırılınca, henüz tamamlanmadıysa o sonraki görev silinir.
+    // Sonraki görevin kimliği bu görevden türetilir (X13): silinmiş bir önceki
+    // kopyası varsa yeniden canlanır; canlı bir kopyası varsa (ör. tamamlanmış
+    // olduğu için geri almada silinmemişse) yeni görev oluşmaz, ona bağlanılır.
     async toggleTask(id) {
       const current = findAlive('tasks', id);
       const now = new Date();
@@ -179,11 +223,16 @@ export const useTodoStore = create((set, get) => {
       const taskTags = [];
 
       if (task.completedAt && current.recurrence) {
-        const next = models.createNextOccurrence(current, nextDueDate(current, now, now), now);
-        const tagIds = liveRecords(get().taskTags).filter(l => l.taskId === id).map(l => l.tagId);
-        task.nextTaskId = next.id;
-        tasks.push(next);
-        taskTags.push(...linksToAdd(next.id, tagIds));
+        const existing = get().tasks.find(t => t.id === nextOccurrenceId(id));
+        if (existing && isAlive(existing)) {
+          task.nextTaskId = existing.id;
+        } else {
+          const next = models.createNextOccurrence(current, nextDueDate(current, now, now), now);
+          const tagIds = liveRecords(get().taskTags).filter(l => l.taskId === id).map(l => l.tagId);
+          task.nextTaskId = next.id;
+          tasks.push(next);
+          taskTags.push(...linksToAdd(next.id, tagIds));
+        }
       } else if (!task.completedAt && current.nextTaskId) {
         task.nextTaskId = null;
         const next = get().tasks.find(t => t.id === current.nextTaskId);
@@ -247,10 +296,12 @@ export const useTodoStore = create((set, get) => {
     },
 
     // Önizlemesi alınmış değişiklikleri uygular; geri alınabilir. Ayarlar
-    // cihaza özel tercih sayıldığı için içe aktarılmaz.
+    // cihaza özel tercih sayıldığı için içe aktarılmaz. Yedek aynı adda birden
+    // fazla etiket getirirse (ör. senkron kopyası) aynı işlemde birleştirilir.
     async importBackup(preview) {
       if (!preview.hasChanges) return;
-      await commit(preview.changes, u.imported);
+      const dedup = mergeDuplicateTags(applyChanges(get(), preview.changes));
+      await commit(combineChanges(preview.changes, dedup), u.imported);
     },
 
     // --- Ayarlar ---
@@ -318,6 +369,14 @@ export const useTodoStore = create((set, get) => {
       assertUniqueTagName(tag.nameKey, id);
       await commit({ tags: [tag] });
       return tag;
+    },
+
+    // Aynı adlı canlı etiketleri birleştirir (X14). Senkron her çekmeden sonra
+    // çağırır; geri alma şeridi göstermez.
+    async mergeDuplicateTags() {
+      const changes = mergeDuplicateTags(get());
+      if (hasChanges(changes)) await commit(changes);
+      return changes;
     },
 
     // Etiket silinince görevler kalır, yalnızca bağlar kaldırılır.

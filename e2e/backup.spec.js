@@ -2,13 +2,15 @@ const fs = require('fs');
 const { test, expect, openApp, text, stored, record, INBOX, taskRecord } = require('./fixtures');
 
 const T = '2026-02-01T00:00:00.000Z';
+// Silme son 30 gün içinde: daha eskisi açılışta kalıcı silinirdi (v4, X10).
+const DELETED = '2026-09-20T00:00:00.000Z';
 const deviceA = {
   schemaVersion: 3,
   categories: [INBOX],
   tags: [record('acil', { name: 'acil', nameKey: 'acil', color: null, updatedAt: T })],
   tasks: [
     taskRecord('a1', 'Yedekteki görev', { updatedAt: T }),
-    taskRecord('a2', 'Silinmiş görev', { updatedAt: T, deletedAt: T }),
+    taskRecord('a2', 'Silinmiş görev', { updatedAt: DELETED, deletedAt: DELETED }),
   ],
   taskTags: [record('l1', { taskId: 'a1', tagId: 'acil', updatedAt: T })],
 };
@@ -51,7 +53,7 @@ test('dışa aktar → başka cihazda içe aktar (birleştir) → geri al', asyn
     await expect(text(page, 'Yedek içe aktarıldı')).toBeVisible();
     const tasks = await stored(page, 'tasks');
     expect(tasks.filter(t => !t.deletedAt).map(t => t.title).sort()).toEqual(['Yedekteki görev', 'Yerel görev']);
-    expect(tasks.find(t => t.id === 'a2').deletedAt).toBe(T); // silinmiş kayıt silinmiş olarak gelir
+    expect(tasks.find(t => t.id === 'a2').deletedAt).toBe(DELETED); // silinmiş kayıt silinmiş olarak gelir
   });
 
   await test.step('aynı yedek tekrar: eklenecek bir şey yok', async () => {

@@ -1,4 +1,4 @@
-import { INBOX_ID, newId, nowIso } from './ids';
+import { INBOX_ID, newId, nowIso, nextOccurrenceId, taskTagId } from './ids';
 import { isValidDateKey, isValidTime } from './dates';
 import { tagKey } from './tags';
 import { normalizeRecurrence } from './recurrence';
@@ -99,9 +99,10 @@ export function updateTask(task, changes, now = new Date()) {
 }
 
 // Tekrarlayan görev tamamlanınca oluşan sonraki görev: alanlar kopyalanır,
-// kontrol listesi işaretsiz ve yeni kimliklerle gelir.
+// kontrol listesi işaretsiz ve yeni kimliklerle gelir. Görevin kimliği öncekinden
+// türetilir; iki cihazda tamamlanan aynı görev tek bir sonraki görev oluşturur.
 export function createNextOccurrence(task, dueDate, now = new Date()) {
-  return createTask(
+  const next = createTask(
     {
       title: task.title,
       notes: task.notes,
@@ -115,6 +116,7 @@ export function createNextOccurrence(task, dueDate, now = new Date()) {
     },
     now,
   );
+  return { ...next, id: nextOccurrenceId(task.id) };
 }
 
 export function toggleTask(task, now = new Date()) {
@@ -174,6 +176,8 @@ export function updateTag(tag, changes, now = new Date()) {
   return next;
 }
 
+// Bağın kimliği görev ve etiketten türetilir: iki cihaz aynı bağı ekleyince
+// tek kayıt olur; kaldırılıp yeniden eklenen bağ aynı kaydı canlandırır.
 export function createTaskTag(taskId, tagId, now = new Date()) {
-  return { ...baseRecord(now), taskId, tagId };
+  return { ...baseRecord(now), id: taskTagId(taskId, tagId), taskId, tagId };
 }

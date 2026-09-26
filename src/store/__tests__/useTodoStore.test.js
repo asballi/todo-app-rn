@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTodoStore, initialState, liveRecords } from '../useTodoStore';
 import { KEYS, readJson } from '../../data/storage';
-import { INBOX_ID } from '../../domain/ids';
+import { INBOX_ID, nextOccurrenceId, taskTagId } from '../../domain/ids';
+import { syncQueue } from '../../sync/queue';
 
 const store = () => useTodoStore.getState();
 
@@ -391,5 +392,125 @@ describe('etiketler', () => {
     await store().deleteTag(old.id);
     const fresh = await store().findOrCreateTag('acil');
     expect(fresh.id).not.toBe(old.id);
+  });
+});
+
+describe('senkron hazırlığı (v4)', () => {
+  const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  test('sonraki tekrarın kimliği görevden türetilir; yeniden tamamlanınca aynı kayıt canlanır', async () => {
+    const task = await store().addTask({ title: 'x', dueDate: today(), recurrence: { unit: 'day' } });
+    await store().toggleTask(task.id);
+    const nextId = store().tasks.find(t => t.id === task.id).nextTaskId;
+    expect(nextId).toBe(nextOccurrenceId(task.id));
+
+    await store().toggleTask(task.id); // işaret kaldırılınca sonraki silinir
+    expect(store().tasks.find(t => t.id === nextId).deletedAt).not.toBeNull();
+
+    await store().toggleTask(task.id);
+    expect(store().tasks).toHaveLength(2);
+    expect(store().tasks.find(t => t.id === nextId)).toMatchObject({ deletedAt: null, completedAt: null });
+  });
+
+  test('sonraki tekrar canlıysa yeniden tamamlamada ikinci kopya oluşmaz', async () => {
+    const task = await store().addTask({ title: 'x', dueDate: today(), recurrence: { unit: 'day' } });
+    await store().toggleTask(task.id);
+    const nextId = store().tasks.find(t => t.id === task.id).nextTaskId;
+    await store().toggleTask(nextId); // sonraki tamamlandı (o da kendi sonrakini oluşturur)
+    await store().toggleTask(task.id); // ilk görevin işareti kalkar; tamamlanmış sonraki kalır
+    const countBefore = store().tasks.length;
+
+    await store().toggleTask(task.id);
+
+    expect(store().tasks).toHaveLength(countBefore);
+    expect(store().tasks.find(t => t.id === task.id).nextTaskId).toBe(nextId);
+    expect(store().tasks.find(t => t.id === nextId).completedAt).not.toBeNull();
+  });
+
+  test('kaldırılıp yeniden eklenen etiket aynı bağ kaydını canlandırır', async () => {
+    const tag = await store().findOrCreateTag('ev');
+    const task = await store().addTask({ title: 'x', tagIds: [tag.id] });
+    await store().setTaskTags(task.id, []);
+    await store().setTaskTags(task.id, [tag.id]);
+    expect(store().taskTags).toEqual([
+      expect.objectContaining({ id: taskTagId(task.id, tag.id), deletedAt: null }),
+    ]);
+  });
+
+  test('kuyruk etkinken her değişiklik kuyruğa girer, değilken girmez', async () => {
+    await store().addTask({ title: 'girişsiz' });
+    expect(syncQueue.size()).toBe(0);
+
+    await syncQueue.activate();
+    const tag = await store().findOrCreateTag('ev');
+    const task = await store().addTask({ title: 'girişli', tagIds: [tag.id] });
+    expect(syncQueue.has('tags', tag.id)).toBe(true);
+    expect(syncQueue.has('tasks', task.id)).toBe(true);
+    expect(syncQueue.has('taskTags', taskTagId(task.id, tag.id))).toBe(true);
+    expect(await readJson(KEYS.syncQueue, null)).toMatchObject({ active: true });
+  });
+
+  test('açılışta 30 günden eski silinmiş kayıtlar kalıcı silinir; kuyruktakiler kalır', async () => {
+    const old = '2020-01-01T00:00:00.000Z';
+    const task = await store().addTask({ title: 'eski' });
+    const queued = await store().addTask({ title: 'kuyrukta' });
+    const recent = await store().addTask({ title: 'yeni silindi' });
+    await store().deleteTasks([recent.id]);
+    const tasks = (await persisted('tasks')).map(t =>
+      t.id === task.id || t.id === queued.id ? { ...t, deletedAt: old, updatedAt: old } : t,
+    );
+    await AsyncStorage.setItem(KEYS.tasks, JSON.stringify(tasks));
+    await syncQueue.activate();
+    await syncQueue.enqueue({ tasks: [queued] });
+
+    useTodoStore.setState(initialState);
+    await store().init();
+
+    const ids = store().tasks.map(t => t.id).sort();
+    expect(ids).toEqual([queued.id, recent.id].sort());
+    expect((await persisted('tasks')).map(t => t.id).sort()).toEqual(ids);
+  });
+
+  test('mergeDuplicateTags aynı adlı etiketleri birleştirir ve kaydeder', async () => {
+    const first = await store().findOrCreateTag('İş');
+    const task = await store().addTask({ title: 'x', tagIds: [first.id] });
+    // Başka bir cihazdan gelmiş gibi aynı adda ikinci etiket ve bağı
+    const dup = { ...first, id: 'dup', createdAt: '2099-01-01T00:00:00.000Z', name: 'iş' };
+    const dupLink = { ...store().taskTags[0], id: 'dup-link', tagId: 'dup' };
+    const other = await store().addTask({ title: 'y' });
+    const otherLink = { ...dupLink, id: 'other-link', taskId: other.id };
+    useTodoStore.setState(s => ({ tags: [...s.tags, dup], taskTags: [...s.taskTags, dupLink, otherLink] }));
+
+    await store().mergeDuplicateTags();
+
+    expect(liveRecords(store().tags).map(t => t.id)).toEqual([first.id]);
+    const links = liveRecords(store().taskTags).map(l => [l.taskId, l.tagId]).sort();
+    expect(links).toEqual([[task.id, first.id], [other.id, first.id]].sort());
+    expect((await persisted('tags')).find(t => t.id === 'dup').deletedAt).not.toBeNull();
+    expect(store().lastUndo).toBeNull();
+  });
+
+  test('içe aktarılan yedekteki aynı adlı etiketler birleştirilir ve birlikte geri alınır', async () => {
+    const tag = await store().findOrCreateTag('acil');
+    await store().addTask({ title: 'a', tagIds: [tag.id] });
+    const backup = store().exportBackup();
+    const dup = { ...tag, id: 'dup', createdAt: '2099-01-01T00:00:00.000Z' };
+    backup.data.tags.push(dup);
+    backup.data.taskTags.push({ ...backup.data.taskTags[0], id: 'dup-link', tagId: 'dup' });
+
+    await AsyncStorage.clear();
+    useTodoStore.setState(initialState);
+    await store().init();
+    await store().importBackup(store().previewImport(JSON.stringify(backup)));
+
+    expect(liveRecords(store().tags).map(t => t.id)).toEqual([tag.id]);
+    expect(liveRecords(store().taskTags).map(l => l.tagId)).toEqual([tag.id]);
+
+    await store().undo();
+    expect(liveRecords(store().tags)).toEqual([]);
+    expect(liveRecords(store().taskTags)).toEqual([]);
   });
 });

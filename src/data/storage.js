@@ -7,6 +7,8 @@ export const KEYS = {
   tags: '@todo/tags',
   taskTags: '@todo/taskTags',
   settings: '@todo/settings',
+  syncQueue: '@todo/syncQueue',
+  syncState: '@todo/syncState',
   legacyTodos: '@todos',
 };
 

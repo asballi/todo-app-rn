@@ -1,7 +1,8 @@
 import { KEYS, readJson, writeJsonMany, withKeyLock } from './storage';
 
-// Her koleksiyon için aynı arayüz: list() ve upsertMany(records).
-// Silme, deletedAt alanı dolu bir kaydın upsert edilmesidir (soft delete).
+// Her koleksiyon için aynı arayüz: list(), upsertMany(records), removeMany(ids).
+// Silme, deletedAt alanı dolu bir kaydın upsert edilmesidir (soft delete);
+// removeMany yalnızca süresi dolmuş silinmiş kayıtların temizliği içindir.
 // v4'te bu arayüzün arkasına Supabase konabilir; store'un değişmesi gerekmez.
 function createCollectionRepository(key) {
   return {
@@ -14,6 +15,13 @@ function createCollectionRepository(key) {
         const byId = new Map((await readJson(key, [])).map(r => [r.id, r]));
         for (const record of records) byId.set(record.id, record);
         await writeJsonMany([[key, [...byId.values()]]]);
+      });
+    },
+    removeMany(ids) {
+      if (ids.length === 0) return Promise.resolve();
+      return withKeyLock(key, async () => {
+        const removed = new Set(ids);
+        await writeJsonMany([[key, (await readJson(key, [])).filter(r => !removed.has(r.id))]]);
       });
     },
   };
