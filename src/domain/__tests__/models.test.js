@@ -1,0 +1,125 @@
+import {
+  createTask,
+  updateTask,
+  toggleTask,
+  createTag,
+  createChecklistItem,
+  createNextOccurrence,
+} from '../models';
+import { INBOX_ID, newId } from '../ids';
+import { tagKey } from '../tags';
+
+test('newId geçerli bir UUID v4 üretir', () => {
+  expect(newId()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  expect(newId()).not.toBe(newId());
+});
+
+test('createTask varsayılanları uygular', () => {
+  const task = createTask({ title: '  Süt al  ' });
+  expect(task).toMatchObject({
+    title: 'Süt al',
+    notes: '',
+    categoryId: INBOX_ID,
+    dueDate: null,
+    dueTime: null,
+    priority: 0,
+    completedAt: null,
+    deletedAt: null,
+  });
+  expect(task.createdAt).toBe(task.updatedAt);
+});
+
+test('createTask geçersiz alanları reddeder', () => {
+  expect(() => createTask({ title: '   ' })).toThrow('boş olamaz');
+  expect(() => createTask({ title: 'x', dueDate: '2026-02-30' })).toThrow('Geçersiz tarih');
+  expect(() => createTask({ title: 'x', dueDate: '2026-02-01', dueTime: '25:00' })).toThrow('Geçersiz saat');
+  expect(() => createTask({ title: 'x', priority: 5 })).toThrow('Geçersiz öncelik');
+});
+
+test('tarih kaldırılınca saat de kaldırılır', () => {
+  const task = createTask({ title: 'x', dueDate: '2026-09-25', dueTime: '10:00' });
+  expect(updateTask(task, { dueDate: null }).dueTime).toBeNull();
+});
+
+test('updateTask yalnızca düzenlenebilir alanları değiştirir', () => {
+  const task = createTask({ title: 'x' });
+  const next = updateTask(task, { title: 'y', id: 'hack', completedAt: 'x' }, new Date(2030, 0, 1));
+  expect(next.title).toBe('y');
+  expect(next.id).toBe(task.id);
+  expect(next.completedAt).toBeNull();
+  expect(next.updatedAt).not.toBe(task.updatedAt);
+});
+
+test('toggleTask tamamlanma zamanını yazar ve siler', () => {
+  const done = toggleTask(createTask({ title: 'x' }));
+  expect(done.completedAt).not.toBeNull();
+  expect(toggleTask(done).completedAt).toBeNull();
+});
+
+test('etiket anahtarı Türkçe büyük/küçük harf kurallarına uyar', () => {
+  expect(tagKey('İş')).toBe('iş');
+  expect(tagKey('IŞIK')).toBe('ışık');
+  expect(tagKey(' Acil ')).toBe('acil');
+  expect(createTag({ name: 'İŞ' }).nameKey).toBe(tagKey('iş'));
+});
+
+describe('kontrol listesi', () => {
+  test('yeni görevde boş liste ve v3 alanları', () => {
+    expect(createTask({ title: 'x' })).toMatchObject({ checklist: [], reminders: [], recurrence: null, nextTaskId: null });
+  });
+
+  test('boş maddeler atılır, eksik alanlar tamamlanır', () => {
+    const task = createTask({ title: 'x', checklist: [{ title: '  süt ' }, { title: '   ' }, { id: 'k', title: 'ekmek', done: 1 }] });
+    expect(task.checklist).toHaveLength(2);
+    expect(task.checklist[0]).toMatchObject({ title: 'süt', done: false });
+    expect(task.checklist[0].id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(task.checklist[1]).toEqual({ id: 'k', title: 'ekmek', done: true });
+  });
+
+  test('updateTask kontrol listesini günceller', () => {
+    const task = createTask({ title: 'x' });
+    const next = updateTask(task, { checklist: [createChecklistItem('madde')] });
+    expect(next.checklist.map(i => i.title)).toEqual(['madde']);
+  });
+
+  test('createChecklistItem boş başlığı reddeder', () => {
+    expect(() => createChecklistItem('  ')).toThrow('boş olamaz');
+  });
+});
+
+describe('tekrar alanı', () => {
+  const monthly = { unit: 'month', interval: 1 };
+
+  test('createTask kuralı doğrular ve ay gününü tarihten alır', () => {
+    const task = createTask({ title: 'Kira', dueDate: '2026-01-31', recurrence: monthly });
+    expect(task.recurrence).toEqual({ unit: 'month', interval: 1, weekdays: null, from: 'due', monthDay: 31 });
+  });
+
+  test('tarih kaldırılınca tekrar da kalkar', () => {
+    const task = createTask({ title: 'x', dueDate: '2026-01-31', recurrence: monthly });
+    expect(updateTask(task, { dueDate: null }).recurrence).toBeNull();
+    expect(createTask({ title: 'x', recurrence: monthly }).recurrence).toBeNull();
+  });
+
+  test('kullanıcı tarihi değiştirirse ay günü yeni tarihten alınır', () => {
+    const task = createTask({ title: 'x', dueDate: '2026-01-31', recurrence: monthly });
+    expect(updateTask(task, { dueDate: '2026-02-15' }).recurrence.monthDay).toBe(15);
+    expect(updateTask(task, { title: 'y' }).recurrence.monthDay).toBe(31);
+  });
+
+  test('createNextOccurrence alanları kopyalar, listeyi sıfırlar, ay gününü korur', () => {
+    const task = createTask({
+      title: 'Kira', notes: 'n', categoryId: 'home', dueDate: '2026-01-31', dueTime: '09:00',
+      priority: 2, recurrence: monthly, checklist: [{ title: 'Dekont', done: true }],
+    });
+    const next = createNextOccurrence(task, '2026-02-28');
+    expect(next).toMatchObject({
+      title: 'Kira', notes: 'n', categoryId: 'home', dueDate: '2026-02-28', dueTime: '09:00',
+      priority: 2, completedAt: null, nextTaskId: null,
+    });
+    expect(next.id).not.toBe(task.id);
+    expect(next.recurrence.monthDay).toBe(31);
+    expect(next.checklist).toEqual([{ id: expect.any(String), title: 'Dekont', done: false }]);
+    expect(next.checklist[0].id).not.toBe(task.checklist[0].id);
+  });
+});

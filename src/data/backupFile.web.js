@@ -1,0 +1,28 @@
+// Web: yedek dosyası indirilir; içe aktarmak için dosya seçilir.
+
+export async function saveBackupFile(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Seçilen dosyanın metni; vazgeçilirse null.
+export function pickBackupFile() {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) resolve(null);
+      else file.text().then(resolve, reject);
+    });
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
